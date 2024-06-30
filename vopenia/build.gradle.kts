@@ -3,6 +3,8 @@ plugins {
     alias(libs.plugins.kotlinCocoapods)
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.spm)
+    id("jvmCompat")
+    id("iosSimulatorConfiguration")
 }
 
 kotlin {
@@ -54,6 +56,9 @@ kotlin {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
         }
+        androidMain.dependencies {
+            implementation(libs.livekit.android)
+        }
     }
 }
 
@@ -72,7 +77,6 @@ android {
 tasks.withType<org.jetbrains.kotlin.gradle.targets.native.tasks.PodInstallSyntheticTask>()
     .configureEach {
         doLast {
-            println("PodInstallSyntheticTask...")
             val xcodeprojFiles = listOf(
                 "Pods/Pods.xcodeproj",
                 "synthetic.xcodeproj",
@@ -91,11 +95,8 @@ fun setIosDeploymentTarget(
     target: String = "14.1",
 ) {
     if (!xcodeprojFile.exists()) {
-        println("setIosDeploymentTarget skip ${xcodeprojFile.absolutePath}")
         return
     }
-
-    println("setIosDeploymentTarget set for $target")
 
     val lines = xcodeprojFile.readLines()
     val out = xcodeprojFile.bufferedWriter()

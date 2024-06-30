@@ -7,6 +7,8 @@ compose-material3 = "1.1.2"
 androidx-activityCompose = "1.8.0"
 kotlinx-coroutines = "1.8.0"
 
+livekit-android = "2.4.2"
+
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlinx-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
@@ -17,6 +19,7 @@ compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling", version.ref = 
 compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview", version.ref = "compose" }
 compose-foundation = { module = "androidx.compose.foundation:foundation", version.ref = "compose" }
 compose-material3 = { module = "androidx.compose.material3:material3", version.ref = "compose-material3" }
+livekit-android = { module = "io.livekit:livekit-android", version.ref = "livekit-android" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

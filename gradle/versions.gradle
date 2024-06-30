@@ -1,0 +1,49 @@
+/* * * * * * * * * * * * * * * * *
+ * Default project info
+ * * * * * * * * * * * * * * * * */
+
+def parentDir = file(buildscript.sourceFile).getParentFile().getAbsolutePath()
+def versionProps = new Properties()
+new File(parentDir, "../version.properties").withInputStream { versionProps.load(it) }
+
+def defaultVersion = versionProps.getProperty("version")
+
+def propSuffix = { prefix, suffixKeyName ->
+    return rootProject.properties.containsKey(suffixKeyName)
+            ? "${prefix}-${rootProject.properties[suffixKeyName]}" : prefix
+}
+
+ext {
+    minSdkVersion = 26
+    javaVersion = "17"
+    prop = { name, defValue ->
+        return rootProject.properties.containsKey(name)
+                ? rootProject.properties[name] : defValue
+    }
+
+    pomDescription = "Vopenia"
+    pomInceptionYear = "${new Date().format("YYYY")}"
+    pomUrl = "https://github.com/vopenia/"
+    pomLicenseName = 'Vopenia'
+    pomLicenseUrl = 'https://github.com/vopenia'
+
+    pomDeveloperId = 'codlab'
+    pomDeveloperName = 'Kevin Le Perf'
+    pomDeveloperEmail = 'codlabtech@gmail.com'
+
+    pomScmConnection = 'scm:git:github.com/vopenia/client-sdk-kotlin-multiplatform.git'
+    pomScmDeveloperConnection = 'scm:git:ssh://github.com/nonopn/client-sdk-kotlin-multiplatform.git'
+    pomScmUrl = 'https://github.com/nonopn/client-sdk-kotlin-multiplatform/tree'
+
+    signingKeyId = prop("signing.keyId", null)
+
+    groupId = prop("GROUP_ID", "io.vopenia")
+    originalVersion = defaultVersion
+    version = propSuffix(defaultVersion, "SUFFIX")
+
+    projectVersionCode = 1
+
+    ndkVersion = "25.1.8937393"
+
+    iOSSimulatorUuid=prop("IOS_SIMULATOR")
+}
