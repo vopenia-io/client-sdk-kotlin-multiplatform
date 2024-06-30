@@ -33,5 +33,7 @@ dependencyResolutionManagement {
 rootProject.name = "VopeniaSDK"
 include(":vopenia")
 include(":vopenia-test-config")
+include(":shared")
+include(":appAndroid")
 
 includeBuild "gradle/extended/${ext.GRADLE_EXTENDED_VERSION_USED}/kt-plugins"

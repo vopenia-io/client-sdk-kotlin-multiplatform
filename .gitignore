@@ -10,3 +10,6 @@ local.properties
 xcuserdata
 
 gradle/extended/
+
+**/Pods
+**/xcuserdata/
