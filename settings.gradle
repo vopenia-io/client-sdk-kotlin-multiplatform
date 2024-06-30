@@ -32,5 +32,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "VopeniaSDK"
 include(":vopenia")
+include(":vopenia-test-config")
 
 includeBuild "gradle/extended/${ext.GRADLE_EXTENDED_VERSION_USED}/kt-plugins"

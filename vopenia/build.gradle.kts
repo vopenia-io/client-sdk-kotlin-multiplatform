@@ -58,6 +58,7 @@ kotlin {
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
+            implementation(project(":vopenia-test-config"))
         }
         androidMain.dependencies {
             implementation(libs.livekit.android)

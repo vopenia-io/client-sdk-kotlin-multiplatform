@@ -44,4 +44,8 @@ ext {
     projectVersionCode = 1
 
     ndkVersion = "25.1.8937393"
+
+    testConfigliveKitUrl = prop("TEST_CONFIG_LIVEKIT_URL", "")
+    testConfigliveKitApiKey = prop("TEST_CONFIG_LIVEKIT_API_KEY", "")
+    testConfigliveKitApiSecret = prop("TEST_CONFIG_LIVEKIT_API_SECRET", "")
 }
