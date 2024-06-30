@@ -1,8 +1,11 @@
+import com.codingfeline.buildkonfig.compiler.FieldSpec
+
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.kotlinCocoapods)
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.spm)
+    alias(additionals.plugins.multiplatform.buildkonfig)
     id("jvmCompat")
     id("iosSimulatorConfiguration")
 }
@@ -63,14 +66,28 @@ kotlin {
 }
 
 android {
-    namespace = "com.vopenia.sdk"
-    compileSdk = 34
+    namespace = rootProject.ext["namespace"] as String
+    compileSdk = additionals.versions.compileSdkVersion.get().toInt()
     defaultConfig {
-        minSdk = 24
+        minSdk = additionals.versions.minSdkVersion.get().toInt()
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
+    }
+}
+
+buildkonfig {
+    packageName = rootProject.ext["namespace"] as String
+
+    defaultConfigs {
+        buildConfigField(
+            FieldSpec.Type.STRING,
+            "VERSION",
+            rootProject.ext["version"] as String,
+            nullable = false,
+            const = true
+        )
     }
 }
 

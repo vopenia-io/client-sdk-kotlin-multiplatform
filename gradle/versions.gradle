@@ -14,7 +14,7 @@ def propSuffix = { prefix, suffixKeyName ->
 }
 
 ext {
-    minSdkVersion = 26
+    namespace = "com.vopenia.sdk"
     javaVersion = "17"
     prop = { name, defValue ->
         return rootProject.properties.containsKey(name)
@@ -37,13 +37,11 @@ ext {
 
     signingKeyId = prop("signing.keyId", null)
 
-    groupId = prop("GROUP_ID", "io.vopenia")
+    groupId = prop("GROUP_ID", "com.vopenia")
     originalVersion = defaultVersion
     version = propSuffix(defaultVersion, "SUFFIX")
 
     projectVersionCode = 1
 
     ndkVersion = "25.1.8937393"
-
-    iOSSimulatorUuid=prop("IOS_SIMULATOR")
 }
