@@ -1,40 +1,39 @@
 package io.vopenia.app.android
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import io.vopenia.app.Greeting
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.core.view.WindowCompat
+import androidx.fragment.app.FragmentActivity
+import eu.codlab.fleet.permissions.PermissionsController
+import io.vopenia.app.App
+import io.vopenia.app.AppBackPressProvider
+import moe.tlaster.precompose.lifecycle.setContent
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
+    private val onBackPressProvider = AppBackPressProvider()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        PermissionsController.setActivity(this)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+
         setContent {
-            MyApplicationTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    GreetingView(Greeting().greet())
-                }
+            Box {
+                App(
+                    isDarkTheme = isSystemInDarkTheme(),
+                    onBackPressed = onBackPressProvider,
+                )
             }
         }
     }
-}
 
-@Composable
-fun GreetingView(text: String) {
-    Text(text = text)
-}
-
-@Preview
-@Composable
-fun DefaultPreview() {
-    MyApplicationTheme {
-        GreetingView("Hello, Android!")
+    @Deprecated("Deprecated in Java")
+    override fun onBackPressed() {
+        println("deprecated but called")
+        if (!onBackPressProvider.onBackPress()) {
+            super.onBackPressed()
+        }
     }
 }

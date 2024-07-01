@@ -11,7 +11,7 @@ kotlin {
     androidTarget {
         compilations.all {
             kotlinOptions {
-                jvmTarget = "1.8"
+                jvmTarget = rootProject.ext["javaVersion"] as String
             }
         }
     }
@@ -33,8 +33,8 @@ android {
         minSdk = additionals.versions.minSdkVersion.get().toInt()
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = rootProject.ext["javaVersionObject"] as JavaVersion
+        targetCompatibility = rootProject.ext["javaVersionObject"] as JavaVersion
     }
 }
 

@@ -16,6 +16,8 @@ def propSuffix = { prefix, suffixKeyName ->
 ext {
     namespace = "com.vopenia.sdk"
     javaVersion = "17"
+    javaVersionObject = JavaVersion.VERSION_17
+
     prop = { name, defValue ->
         return rootProject.properties.containsKey(name)
                 ? rootProject.properties[name] : defValue
@@ -48,4 +50,6 @@ ext {
     testConfigliveKitUrl = prop("TEST_CONFIG_LIVEKIT_URL", "")
     testConfigliveKitApiKey = prop("TEST_CONFIG_LIVEKIT_API_KEY", "")
     testConfigliveKitApiSecret = prop("TEST_CONFIG_LIVEKIT_API_SECRET", "")
+
+    kotlinCompilerExtensionVersion = "${libs.versions.kotlin.compiler.extension.version.get()}".toString()
 }

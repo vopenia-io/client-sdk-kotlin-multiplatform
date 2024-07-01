@@ -12,11 +12,7 @@ plugins {
 
 kotlin {
     androidTarget {
-        compilations.all {
-            kotlinOptions {
-                jvmTarget = "1.8"
-            }
-        }
+        publishLibraryVariants("release", "debug")
     }
     listOf(
         iosX64(),
@@ -73,8 +69,8 @@ android {
         minSdk = additionals.versions.minSdkVersion.get().toInt()
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = rootProject.ext["javaVersionObject"] as JavaVersion
+        targetCompatibility = rootProject.ext["javaVersionObject"] as JavaVersion
     }
 }
 
@@ -130,3 +126,9 @@ fun setIosDeploymentTarget(
         }
     }
 }
+
+//tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+//    kotlinOptions {
+//        jvmTarget = rootProject.ext["javaVersion"] as String
+//    }
+//}

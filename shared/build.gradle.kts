@@ -2,16 +2,12 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.kotlinCocoapods)
     alias(libs.plugins.androidLibrary)
+    alias(additionals.plugins.jetbrains.compose)
+    alias(additionals.plugins.kotlin.serialization)
 }
 
 kotlin {
-    androidTarget {
-        compilations.all {
-            kotlinOptions {
-                jvmTarget = "1.8"
-            }
-        }
-    }
+    androidTarget()
     iosX64()
     iosArm64()
     iosSimulatorArm64()
@@ -30,6 +26,19 @@ kotlin {
     
     sourceSets {
         commonMain.dependencies {
+            implementation(compose.runtime)
+            implementation(compose.foundation)
+            implementation(compose.ui)
+            implementation(compose.material)
+            @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
+            implementation(compose.components.resources)
+            implementation(compose.materialIconsExtended)
+
+            api(additionals.multiplatform.precompose)
+            api(additionals.multiplatform.safearea)
+            api(additionals.multiplatform.widgets.compose)
+            api(additionals.multiplatform.permissions)
+
             implementation(projects.vopenia)
         }
         commonTest.dependencies {
@@ -45,7 +54,13 @@ android {
         minSdk = 24
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = rootProject.ext["javaVersionObject"] as JavaVersion
+        targetCompatibility = rootProject.ext["javaVersionObject"] as JavaVersion
     }
 }
+
+//tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+//    kotlinOptions {
+//        jvmTarget = rootProject.ext["javaVersion"] as String
+//    }
+//}
