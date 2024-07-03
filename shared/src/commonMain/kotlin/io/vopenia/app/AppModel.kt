@@ -1,5 +1,6 @@
 package io.vopenia.app
 
+import com.vopenia.sdk.Room
 import eu.codlab.files.VirtualFile
 import eu.codlab.viewmodel.StateViewModel
 import eu.codlab.viewmodel.launch
@@ -7,6 +8,7 @@ import io.vopenia.app.http.BackendConnection
 import io.vopenia.app.session.SavedSession
 import kotlinx.coroutines.delay
 import kotlinx.serialization.json.Json
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 private var baseUrl = com.vopenia.app.config.BuildKonfig.ENDPOINT_TOKEN
@@ -18,7 +20,8 @@ fun setEndpoint(base: String) {
 data class AppModelState(
     var initialized: Boolean = false,
     var loading: Boolean = false,
-    val session: SavedSession? = null
+    val session: SavedSession? = null,
+    val room: Room? = null
 )
 
 class AppModel() : StateViewModel<AppModelState>(AppModelState()) {
@@ -42,7 +45,7 @@ class AppModel() : StateViewModel<AppModelState>(AppModelState()) {
 
         println(session)
 
-        delay(2.seconds)
+        delay(100.milliseconds)
 
         updateState {
             copy(
@@ -52,8 +55,13 @@ class AppModel() : StateViewModel<AppModelState>(AppModelState()) {
         }
     }
 
-    suspend fun token(participant: String, room: String) =
-        backendConnection.token(participant, room)
+    fun joinRoom(participant: String, room: String) = launch {
+        val roomObject = Room()
+        updateState { copy(room = roomObject) }
+
+        val token = backendConnection.token(participant, room)
+        roomObject.connect(token.url, token.token)
+    }
 }
 
 suspend fun VirtualFile.readStringIfExists() = if (exists()) {
