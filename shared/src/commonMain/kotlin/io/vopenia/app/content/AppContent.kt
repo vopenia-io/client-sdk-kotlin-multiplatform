@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import io.vopenia.app.LocalApp
 import io.vopenia.app.content.initialize.InitializeScreen
 import io.vopenia.app.content.join.JoinScreen
+import io.vopenia.app.content.room.RoomScreen
 
 @Composable
 fun AppContent() {
@@ -20,6 +21,7 @@ fun AppContent() {
     when {
         !state.initialized -> InitializeScreen(modifier)
         null == state.room -> JoinScreen(modifier)
+        null != state.room -> RoomScreen(modifier)
         else -> {
 
         }

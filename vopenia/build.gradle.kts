@@ -22,6 +22,7 @@ kotlin {
     ).forEach {
         it.binaries {
             framework {
+                transitiveExport = true
                 baseName = "KotlinLibrary"
             }
         }
@@ -36,6 +37,7 @@ kotlin {
         framework {
             baseName = "vopenia"
             isStatic = true
+            transitiveExport = true
         }
 
 

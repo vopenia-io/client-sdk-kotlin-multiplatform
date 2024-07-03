@@ -1,16 +1,36 @@
 PODS:
+  - LiveKitClient (2.0.9):
+    - LiveKitWebRTC (~> 114.5735.18)
+    - Logging
+    - SwiftProtobuf
+  - LiveKitWebRTC (114.5735.18)
+  - Logging (1.4.0)
   - shared (1.0)
+  - SwiftProtobuf (1.26.0)
 
 DEPENDENCIES:
+  - LiveKitClient (from `../../LiveKitClient`)
   - shared (from `../shared`)
 
+SPEC REPOS:
+  trunk:
+    - LiveKitWebRTC
+    - Logging
+    - SwiftProtobuf
+
 EXTERNAL SOURCES:
+  LiveKitClient:
+    :path: "../../LiveKitClient"
   shared:
     :path: "../shared"
 
 SPEC CHECKSUMS:
+  LiveKitClient: ae431a0c2e057e33687d2de5bfc53802c61b9a9b
+  LiveKitWebRTC: 2ece32ec8de2f15053a604886a2328a7f2c0ad66
+  Logging: beeb016c9c80cf77042d62e83495816847ef108b
   shared: 51412128173eacfed701b4fc7a0576c3a34d8bad
+  SwiftProtobuf: 5e8349171e7c2f88f5b9e683cb3cb79d1dc780b3
 
-PODFILE CHECKSUM: 6371345e716ec5dadd4194cf43a2ef7c45d5aafb
+PODFILE CHECKSUM: e6ae8ffecf88ce1091f79b97bcedb307088d361c
 
 COCOAPODS: 1.12.1

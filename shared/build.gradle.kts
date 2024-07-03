@@ -27,6 +27,7 @@ kotlin {
         framework {
             baseName = "shared"
             isStatic = true
+            transitiveExport = true
         }
     }
 
@@ -92,6 +93,46 @@ buildkonfig {
                 nullable = false,
                 const = true
             )
+        }
+    }
+}
+
+
+tasks.withType<org.jetbrains.kotlin.gradle.targets.native.tasks.PodInstallSyntheticTask>()
+    .configureEach {
+        doLast {
+            val xcodeprojFiles = listOf(
+                "Pods/Pods.xcodeproj",
+                "synthetic.xcodeproj",
+            )
+
+            for (xcodeprojFile in xcodeprojFiles) {
+                val file =
+                    project.buildDir.resolve("cocoapods/synthetic/ios/$xcodeprojFile/project.pbxproj")
+                setIosDeploymentTarget(file)
+            }
+        }
+    }
+
+fun setIosDeploymentTarget(
+    xcodeprojFile: File,
+    target: String = "14.1",
+) {
+    if (!xcodeprojFile.exists()) {
+        return
+    }
+
+    val lines = xcodeprojFile.readLines()
+    val out = xcodeprojFile.bufferedWriter()
+    out.use {
+        for (line in lines) {
+            out.write(
+                line.replace(
+                    "IPHONEOS_DEPLOYMENT_TARGET = ",
+                    "IPHONEOS_DEPLOYMENT_TARGET = $target; // "
+                )
+            )
+            out.write(("\n"))
         }
     }
 }
