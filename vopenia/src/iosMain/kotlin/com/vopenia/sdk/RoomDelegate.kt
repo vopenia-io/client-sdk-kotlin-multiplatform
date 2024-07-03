@@ -4,17 +4,26 @@ import LiveKitClient.ConnectOptions
 import LiveKitClient.Room
 import LiveKitClient.RoomOptions
 import LiveKitClient.addDelegate
+import com.vopenia.sdk.events.ConnectionState
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.coroutines.CoroutineScope
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
-class RoomDelegate {
+@OptIn(ExperimentalForeignApi::class)
+class RoomDelegate(
+    private val scope: CoroutineScope,
+    private val emit: (ConnectionState) -> Unit
+) {
     @OptIn(ExperimentalForeignApi::class)
     suspend fun connectWithUrl(
         url: String,
         token: String,
     ) {
+        room.addDelegate(
+            delegate
+        )
         suspendCoroutine { continuation ->
             room.connectWithUrl(
                 url,
@@ -31,36 +40,17 @@ class RoomDelegate {
         }
     }
 
-    @OptIn(ExperimentalForeignApi::class)
     private val connectOptions = ConnectOptions()
 
-    @OptIn(ExperimentalForeignApi::class)
     private val roomOptions = RoomOptions()
 
-    /*@OptIn(ExperimentalForeignApi::class)
-    val delegate: RoomDelegateProtocol = object : RoomDelegateProtocol {
-        override fun roomDidConnect(room: Room) {
-            super.roomDidConnect(room)
+    val delegate = RoomDelegateProtocolOverride(emit)
+
+    val room: Room = Room(delegate, connectOptions, roomOptions)
+
+    fun disconnect() {
+        room.disconnectWithCompletionHandler {
+            emit(ConnectionState.Disconnected)
         }
-
-        override fun roomDidReconnect(room: Room) {
-            super.roomDidReconnect(room)
-        }
-
-        override fun roomIsReconnecting(room: Room) {
-            super.roomIsReconnecting(room)
-        }*/
-
-    // also called when didFailedToConnectWithError
-    /*override fun room(room: Room, didDisconnectWithError: LiveKitError?) {
-        emit(
-            ConnectionState.ConnectionError(
-                NSErrorException(didDisconnectWithError!!)
-            )
-        )
-    }*/
-    //}
-
-    @OptIn(ExperimentalForeignApi::class)
-    val room: Room = Room(/*delegate, connectOptions, roomOptions*/)
+    }
 }

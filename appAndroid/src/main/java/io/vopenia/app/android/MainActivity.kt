@@ -5,7 +5,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.core.view.WindowCompat
 import androidx.fragment.app.FragmentActivity
-import eu.codlab.fleet.permissions.PermissionsController
+import com.vopenia.sdk.PermissionsActivityController
 import io.vopenia.app.App
 import io.vopenia.app.AppBackPressProvider
 import moe.tlaster.precompose.lifecycle.setContent
@@ -16,7 +16,8 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        PermissionsController.setActivity(this)
+        PermissionsActivityController.setActivity(this)
+
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
         setContent {

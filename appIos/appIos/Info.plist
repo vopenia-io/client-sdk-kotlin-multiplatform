@@ -48,5 +48,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>In order to show yourself, please accept the camera permission</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>In order to speak in the conferences, please accept the microphone permission</string>
 </dict>
 </plist>

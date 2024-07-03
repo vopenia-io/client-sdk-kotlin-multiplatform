@@ -56,7 +56,7 @@ kotlin {
             api(additionals.multiplatform.viewmodel)
             api(additionals.multiplatform.file.access)
 
-            implementation(projects.vopenia)
+            api(projects.vopenia)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

@@ -53,6 +53,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(libs.kotlinx.coroutines)
+            implementation(additionals.multiplatform.permissions)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -61,6 +62,7 @@ kotlin {
         }
         androidMain.dependencies {
             implementation(libs.livekit.android)
+            api(libs.androidx.fragment)
         }
     }
 }

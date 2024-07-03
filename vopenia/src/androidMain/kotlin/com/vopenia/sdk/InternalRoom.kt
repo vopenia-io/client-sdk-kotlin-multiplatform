@@ -4,19 +4,14 @@ import com.vopenia.sdk.events.ConnectionState
 import io.livekit.android.LiveKit
 import io.livekit.android.events.RoomEvent
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-actual class Room actual constructor() {
-    private val scope = CoroutineScope(Dispatchers.IO)
+internal actual class InternalRoom actual constructor(
+    private val scope: CoroutineScope,
+    private val connectionStateEmitter: MutableStateFlow<ConnectionState>
+) {
     private val room = LiveKit.create(Sdk.applicationContext)
-
-    private val connectionStateEmitter: MutableStateFlow<ConnectionState> =
-        MutableStateFlow(ConnectionState.Default)
-    actual val connectionState: StateFlow<ConnectionState> = connectionStateEmitter.asStateFlow()
 
     actual suspend fun connect(url: String, token: String) {
         // nothing for now
@@ -62,5 +57,9 @@ actual class Room actual constructor() {
                 }
             }
         }
+    }
+
+    actual fun disconnect() {
+        room.disconnect()
     }
 }
