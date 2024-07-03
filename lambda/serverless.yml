@@ -1,0 +1,21 @@
+# "org" ensures this Service is used with the correct Serverless Framework Access Key.
+org: blipya
+# "app" enables Serverless Framework Dashboard features and sharing them with other Services.
+app: lambda
+# "service" is the name of this project. This will also be added to your AWS resource names.
+service: lambda
+useDotenv: true
+
+provider:
+  environment:
+    API_KEY: ${env:API_KEY}
+    API_SECRET: ${env:API_SECRET}
+    API_URL: ${env:API_URL}
+  name: aws
+  runtime: nodejs20.x
+
+functions:
+  api:
+    handler: index.handler
+    events:
+      - httpApi: "*"

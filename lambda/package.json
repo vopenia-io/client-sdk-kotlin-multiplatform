@@ -1,0 +1,19 @@
+{
+  "name": "lambda",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "build": "npx tsc",
+    "deploy": "yarn build ; npx serverless deploy"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "livekit-server-sdk": "1.2.7",
+    "serverless-http": "^3.2.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "serverless": "^4.1.7",
+    "typescript": "^5.5.2"
+  }
+}
