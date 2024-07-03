@@ -1,10 +1,15 @@
+import com.codingfeline.buildkonfig.compiler.FieldSpec
+
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.kotlinCocoapods)
     alias(libs.plugins.androidLibrary)
+    alias(additionals.plugins.multiplatform.buildkonfig)
     alias(additionals.plugins.jetbrains.compose)
     alias(additionals.plugins.kotlin.serialization)
 }
+
+val sampleAppNamespace = rootProject.ext["sampleAppNamespace"] as String
 
 kotlin {
     androidTarget()
@@ -23,21 +28,31 @@ kotlin {
             isStatic = true
         }
     }
-    
+
     sourceSets {
         commonMain.dependencies {
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.ui)
             implementation(compose.material)
+            implementation(compose.material3)
             @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
             implementation(compose.components.resources)
             implementation(compose.materialIconsExtended)
+
+            api(additionals.kotlinx.serialization.json)
+
+            implementation(libs.moko.viewmodel)
+            implementation(libs.moko.viewmodel.compose)
 
             api(additionals.multiplatform.precompose)
             api(additionals.multiplatform.safearea)
             api(additionals.multiplatform.widgets.compose)
             api(additionals.multiplatform.permissions)
+            api(additionals.multiplatform.platform)
+            api(additionals.multiplatform.http.client)
+            api(additionals.multiplatform.viewmodel)
+            api(additionals.multiplatform.file.access)
 
             implementation(projects.vopenia)
         }
@@ -48,7 +63,7 @@ kotlin {
 }
 
 android {
-    namespace = "io.vopenia.app"
+    namespace = sampleAppNamespace
     compileSdk = 34
     defaultConfig {
         minSdk = 24
@@ -56,6 +71,24 @@ android {
     compileOptions {
         sourceCompatibility = rootProject.ext["javaVersionObject"] as JavaVersion
         targetCompatibility = rootProject.ext["javaVersionObject"] as JavaVersion
+    }
+}
+
+buildkonfig {
+    packageName = "$sampleAppNamespace.config"
+
+    defaultConfigs {
+        listOf(
+            "ENDPOINT_TOKEN" to rootProject.ext["sampleAppTokenEndpoint"] as String,
+        ).forEach { (name, value) ->
+            buildConfigField(
+                FieldSpec.Type.STRING,
+                name,
+                value,
+                nullable = false,
+                const = true
+            )
+        }
     }
 }
 

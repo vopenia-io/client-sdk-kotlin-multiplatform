@@ -51,5 +51,8 @@ ext {
     testConfigliveKitApiKey = prop("TEST_CONFIG_LIVEKIT_API_KEY", "")
     testConfigliveKitApiSecret = prop("TEST_CONFIG_LIVEKIT_API_SECRET", "")
 
+    sampleAppNamespace = "com.vopenia.app"
+    sampleAppTokenEndpoint = prop("VOPENIA_SAMPLE_APP_TOKEN_ENDPOINT", "")
+
     kotlinCompilerExtensionVersion = "${libs.versions.kotlin.compiler.extension.version.get()}".toString()
 }

@@ -13,3 +13,5 @@ gradle/extended/
 
 **/Pods
 **/xcuserdata/
+**/.env
+lambda/index*
