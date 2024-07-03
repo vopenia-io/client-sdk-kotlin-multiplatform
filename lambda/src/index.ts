@@ -1,23 +1,33 @@
 import serverless from "serverless-http";
-import express from "express";
+import express, { NextFunction } from "express";
 import { AccessToken } from "livekit-server-sdk";
 
 const app = express();
 
+const bufferObject = (body: any) => {
+  if (!body) return {};
+  if (body instanceof Buffer) {
+    try {
+      return JSON.parse(body.toString());
+    } catch (err) {
+      //
+    }
+  }
+  return {};
+};
+
 app.post("/", async (req, res, next) => {
-  const body: any = req.body || {};
+  const body: any = bufferObject(req.body);
   const apiKey = body.api_key || process.env.API_KEY;
   const apiSecret = body.api_key || process.env.API_SECRET;
   const url = body.api_url || process.env.API_URL;
   
   if (!body.participant || typeof body.participant !== "string") {
-    next();
-    return;
+    return res.status(404).json({ error: "invalid participant", body });
   }
   
   if (!body.room || typeof body.room !== "string") {
-    next();
-    return;
+    return res.status(404).json({ error: "invalid room", body });
   }
 
 
