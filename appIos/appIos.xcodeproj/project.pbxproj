@@ -359,12 +359,14 @@
 				DEVELOPMENT_TEAM = W75N7T34M4;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = appIos/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Vopenia;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = io.vopenia.app.ios;
+				PRODUCT_BUNDLE_IDENTIFIER = eu.codlab.vopenia;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -381,12 +383,14 @@
 				DEVELOPMENT_TEAM = W75N7T34M4;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = appIos/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Vopenia;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = io.vopenia.app.ios;
+				PRODUCT_BUNDLE_IDENTIFIER = eu.codlab.vopenia;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";

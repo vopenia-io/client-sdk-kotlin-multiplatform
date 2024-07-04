@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "io.vopenia.app.android"
+    namespace = "eu.codlab.vopenia"
     compileSdk = 34
     defaultConfig {
         minSdk = 24
