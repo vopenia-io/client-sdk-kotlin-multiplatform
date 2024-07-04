@@ -10,6 +10,8 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform) apply false
     alias(libs.plugins.kotlinCocoapods) apply false
     alias(libs.plugins.spm) apply false
+    alias(libs.plugins.googleServices) apply false
+    alias(libs.plugins.appDistribution) apply false
     alias(additionals.plugins.multiplatform.buildkonfig) apply false
     alias(additionals.plugins.jetbrains.compose) apply false
     alias(additionals.plugins.kotlin.serialization) apply false

@@ -15,3 +15,6 @@ gradle/extended/
 **/xcuserdata/
 **/.env
 lambda/index*
+
+google-services.json
+vopenia-service-crendentials.json

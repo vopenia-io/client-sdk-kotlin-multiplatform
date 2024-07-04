@@ -1,18 +1,21 @@
 package com.vopenia.sdk.permissions
 
+import eu.codlab.permissions.PermissionState
 import eu.codlab.permissions.PermissionState as PS
 
 enum class PermissionState {
     NotDetermined,
     Granted,
     Denied,
-    DeniedAlways;
+    DeniedAlways,
+    NotGranted;
 
     internal fun toState() = when (this) {
         NotDetermined -> PS.NotDetermined
         Granted -> PS.Granted
         Denied -> PS.Denied
         DeniedAlways -> PS.DeniedAlways
+        NotGranted -> PS.NotGranted
     }
 
     companion object {
@@ -21,6 +24,7 @@ enum class PermissionState {
             PS.Granted -> Granted
             PS.Denied -> Denied
             PS.DeniedAlways -> DeniedAlways
+            PermissionState.NotGranted -> NotGranted
         }
     }
 }

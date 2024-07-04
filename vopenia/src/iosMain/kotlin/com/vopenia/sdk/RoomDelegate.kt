@@ -4,6 +4,7 @@ import LiveKitClient.ConnectOptions
 import LiveKitClient.Room
 import LiveKitClient.RoomOptions
 import LiveKitClient.addDelegate
+import LiveKitClient.setMicrophoneWithEnabled
 import com.vopenia.sdk.events.ConnectionState
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.CoroutineScope
@@ -37,6 +38,10 @@ class RoomDelegate(
                     continuation.resume(Unit)
                 }
             }
+        }
+
+        room.localParticipant().setMicrophoneWithEnabled(true, null, null) { _, _ ->
+            // nothing
         }
     }
 

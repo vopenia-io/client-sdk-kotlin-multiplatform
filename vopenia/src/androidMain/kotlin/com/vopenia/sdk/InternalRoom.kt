@@ -18,6 +18,8 @@ internal actual class InternalRoom actual constructor(
         collect()
 
         room.connect(url, token)
+
+        room.localParticipant.setMicrophoneEnabled(true)
     }
 
     private fun collect() = scope.launch {
