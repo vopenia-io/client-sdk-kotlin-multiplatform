@@ -1,8 +1,12 @@
 package com.vopenia.sdk
 
 import com.vopenia.sdk.events.ConnectionState
+import com.vopenia.sdk.participant.InternalLocalParticipant
+import com.vopenia.sdk.participant.local.LocalParticipant
+import com.vopenia.sdk.participant.remote.RemoteParticipant
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 internal actual class InternalRoom actual constructor(
@@ -24,4 +28,10 @@ internal actual class InternalRoom actual constructor(
     actual fun disconnect() {
         roomDelegate.disconnect()
     }
+
+    actual val localParticipant: LocalParticipant
+        get() = roomDelegate.localParticipant
+
+    actual val remoteParticipants: StateFlow<List<RemoteParticipant>> =
+        roomDelegate.remoteParticipants
 }

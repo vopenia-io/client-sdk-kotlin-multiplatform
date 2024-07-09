@@ -1,6 +1,7 @@
 package com.vopenia.sdk
 
 import com.vopenia.sdk.events.ConnectionState
+import com.vopenia.sdk.participant.local.LocalParticipant
 import com.vopenia.sdk.permissions.Permission
 import com.vopenia.sdk.permissions.PermissionRefused
 import com.vopenia.sdk.permissions.PermissionsController
@@ -24,6 +25,10 @@ class Room {
         connectionStateEmitter
     )
 
+    val remoteParticipants = internalRoom.remoteParticipants
+
+    val localParticipant = internalRoom.localParticipant
+
     suspend fun connect(
         url: String,
         token: String,
@@ -37,7 +42,5 @@ class Room {
         }
 
         internalRoom.connect(url, token)
-
-        connectionStateEmitter.emit(ConnectionState.Connected)
     }
 }
