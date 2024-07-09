@@ -1,0 +1,3 @@
+- JoinRoom design
+- minimalistic approach proving event's propagation back to Kotlin from native side
+- Room's debug info for the participants

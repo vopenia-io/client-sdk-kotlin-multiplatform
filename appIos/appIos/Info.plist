@@ -50,12 +50,13 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>UISupportedInterfaceOrientations~ipad</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
+	<key>NSContactsUsageDescription</key>
+	<string>In order to display you participants you may know, we need to have access to your local contacts information. Without this access granted, we won&apos;t be able to corrolate them but you will still be able to use the app.</string>
+	<key>NSMotionUsageDescription</key>
+	<string>In order to be able to check the environmental information which will lead to a better user experience, having access to motion information will help pre-determined the best in app behaviour for the audio and video quality</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Granting us the location while you use this app will help make sure that we can tune and configure the room&apos;s quality wherever you are. Not granting this will still give you access to the features</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>In order to integrate your bluetooth&apos;s surrounding and bluetooth capable devices with room&apos;s connectivity, we need your permission to have access to them. Without this permission, you&apos;ll still be able to use the app.</string>
 </dict>
 </plist>
