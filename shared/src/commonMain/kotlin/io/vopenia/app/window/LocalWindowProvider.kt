@@ -15,7 +15,6 @@ import androidx.compose.ui.platform.LocalDensity
 import io.vopenia.app.theme.AppColor
 import io.vopenia.app.theme.WindowType
 
-val LocalWindow = compositionLocalOf { WindowType.TABLET }
 val LocalFrame = compositionLocalOf { WindowType.TABLET }
 
 @Composable
@@ -38,33 +37,6 @@ fun LocalFrameProvider(
                 }
 
                 println("frameSize $width $frame")
-            }.background(AppColor.BackgroundBlue)
-        ) {
-            content()
-        }
-    }
-}
-
-@Composable
-fun LocalWindowProvider(
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
-) {
-    val localDensity = LocalDensity.current
-    var window by remember { mutableStateOf(WindowType.TABLET) }
-    CompositionLocalProvider(
-        LocalWindow provides window,
-    ) {
-        Box(
-            modifier = modifier.onGloballyPositioned { coordinates ->
-                val width = with(localDensity) { coordinates.size.width.toDp() }
-
-                val newWindowSize = WindowType.basedOnWidth(width)
-                if (newWindowSize != window) {
-                    window = newWindowSize
-                }
-
-                println("windowSize $width $window")
             }.background(AppColor.BackgroundBlue)
         ) {
             content()
