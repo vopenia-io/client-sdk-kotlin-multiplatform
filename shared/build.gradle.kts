@@ -1,12 +1,13 @@
 import com.codingfeline.buildkonfig.compiler.FieldSpec
 
 plugins {
-    alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.kotlinCocoapods)
-    alias(libs.plugins.androidLibrary)
+    alias(additionals.plugins.kotlin.multiplatform)
+    alias(additionals.plugins.kotlin.cocoapods)
+    alias(additionals.plugins.android.library)
     alias(additionals.plugins.multiplatform.buildkonfig)
     alias(additionals.plugins.jetbrains.compose)
     alias(additionals.plugins.kotlin.serialization)
+    alias(additionals.plugins.compose.compiler)
 }
 
 val sampleAppNamespace = rootProject.ext["sampleAppNamespace"] as String
@@ -77,6 +78,12 @@ android {
         sourceCompatibility = rootProject.ext["javaVersionObject"] as JavaVersion
         targetCompatibility = rootProject.ext["javaVersionObject"] as JavaVersion
     }
+}
+
+compose.resources {
+    publicResClass = true
+    packageOfResClass = "$sampleAppNamespace.res"
+    generateResClass = always
 }
 
 buildkonfig {

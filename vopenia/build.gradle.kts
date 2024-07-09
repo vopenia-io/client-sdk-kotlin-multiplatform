@@ -1,9 +1,9 @@
 import com.codingfeline.buildkonfig.compiler.FieldSpec
 
 plugins {
-    alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.kotlinCocoapods)
-    alias(libs.plugins.androidLibrary)
+    alias(additionals.plugins.kotlin.multiplatform)
+    alias(additionals.plugins.kotlin.cocoapods)
+    alias(additionals.plugins.android.library)
     alias(libs.plugins.spm)
     alias(additionals.plugins.multiplatform.buildkonfig)
     id("jvmCompat")
@@ -22,7 +22,7 @@ kotlin {
     ).forEach {
         it.binaries {
             framework {
-                transitiveExport = true
+                //transitiveExport = true
                 baseName = "KotlinLibrary"
             }
         }
@@ -36,8 +36,8 @@ kotlin {
         osx.deploymentTarget = "16.0"
         framework {
             baseName = "vopenia"
-            isStatic = true
-            transitiveExport = true
+            isStatic = false
+            //transitiveExport = true
         }
 
 

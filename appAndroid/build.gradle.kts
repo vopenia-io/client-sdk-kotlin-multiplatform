@@ -1,8 +1,9 @@
 import com.google.firebase.appdistribution.gradle.firebaseAppDistribution
 
 plugins {
-    alias(libs.plugins.androidApplication)
-    alias(libs.plugins.kotlinAndroid)
+    alias(additionals.plugins.android.application)
+    alias(additionals.plugins.kotlin.android)
+    alias(additionals.plugins.compose.compiler)
     alias(libs.plugins.googleServices)
     alias(libs.plugins.appDistribution)
 }
@@ -18,9 +19,6 @@ android {
     }
     buildFeatures {
         compose = true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion = additionals.versions.androidx.compose.compiler.get()
     }
     packaging {
         resources {

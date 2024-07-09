@@ -1,8 +1,8 @@
 import com.codingfeline.buildkonfig.compiler.FieldSpec
 
 plugins {
-    alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.androidLibrary)
+    alias(additionals.plugins.kotlin.multiplatform)
+    alias(additionals.plugins.android.library)
     alias(additionals.plugins.multiplatform.buildkonfig)
     id("jvmCompat")
 }
