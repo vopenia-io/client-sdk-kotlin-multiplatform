@@ -33,6 +33,7 @@ app.post("/", async (req, res, next) => {
 
   const at = new AccessToken(apiKey, apiSecret, {
     identity: body.participant,
+    name: body.participant
   });
 
   at.addGrant({
