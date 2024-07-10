@@ -11,7 +11,7 @@ import androidx.compose.ui.interop.UIKitView
 import com.vopenia.sdk.Room
 import com.vopenia.sdk.VideoViewFactory
 import com.vopenia.sdk.VideoViewWrapper
-import com.vopenia.sdk.participant.track.RemoteTrack
+import com.vopenia.sdk.participant.track.RemoteVideoTrack
 import kotlinx.cinterop.ExperimentalForeignApi
 
 @OptIn(ExperimentalForeignApi::class)
@@ -19,10 +19,10 @@ import kotlinx.cinterop.ExperimentalForeignApi
 actual fun VideoView(
     modifier: Modifier,
     room: Room,
-    track: RemoteTrack,
+    track: RemoteVideoTrack,
     isMirror: Boolean,
 ) {
-    var previousTrack: RemoteTrack? by remember { mutableStateOf(null) }
+    var previousTrack: RemoteVideoTrack? by remember { mutableStateOf(null) }
     var rememberedWrapper: VideoViewWrapper? by remember { mutableStateOf(null) }
 
     LaunchedEffect(track) {

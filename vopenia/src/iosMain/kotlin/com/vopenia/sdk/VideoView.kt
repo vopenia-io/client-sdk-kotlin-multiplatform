@@ -1,8 +1,7 @@
 package com.vopenia.sdk
 
-import LiveKitClient.RemoteVideoTrack
 import LiveKitClient.VideoView
-import com.vopenia.sdk.participant.track.RemoteTrack
+import com.vopenia.sdk.participant.track.RemoteVideoTrack
 import com.vopenia.sdk.participant.track.VideoSink
 import kotlinx.cinterop.ExperimentalForeignApi
 
@@ -17,11 +16,11 @@ class VideoViewWrapper(
 ) : VideoSink {
     // var track: RemoteTrack? = null
 
-    override fun attach(track: RemoteTrack) {
+    override fun attach(track: RemoteVideoTrack) {
         track.addRenderer(this)
     }
 
-    override fun detach(track: RemoteTrack) {
+    override fun detach(track: RemoteVideoTrack) {
         track.removeRenderer(this)
     }
 }

@@ -3,30 +3,30 @@ package com.vopenia.sdk.participant
 import android.util.Log
 import com.vopenia.sdk.participant.remote.RemoteParticipant
 import com.vopenia.sdk.participant.remote.RemoteParticipantState
-import com.vopenia.sdk.participant.track.InternalRemoteTrack
+import com.vopenia.sdk.participant.track.Kind
+import com.vopenia.sdk.participant.track.RemoteAudioTrack
+import com.vopenia.sdk.participant.track.RemoteNoneTrack
 import com.vopenia.sdk.participant.track.RemoteTrack
+import com.vopenia.sdk.participant.track.RemoteVideoTrack
+import com.vopenia.sdk.participant.track.kindFrom
 import io.livekit.android.events.ParticipantEvent
 import io.livekit.android.events.collect
 import io.livekit.android.room.track.RemoteTrackPublication
+import io.livekit.android.room.track.Track
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import io.livekit.android.room.participant.RemoteParticipant as RP
 
 class InternalRemoteParticipant(
-    private val scope: CoroutineScope,
+    scope: CoroutineScope,
     private val remoteParticipant: RP,
     connected: Boolean
-) : RemoteParticipant {
+) : RemoteParticipant(scope) {
 
-    private val remoteTracks = MutableStateFlow<List<InternalRemoteTrack>>(emptyList())
-    override val tracks: StateFlow<List<RemoteTrack>> = remoteTracks.asStateFlow()
-
-    private val stateFlow = MutableStateFlow(
+    override val stateFlow = MutableStateFlow(
         RemoteParticipantState(
             connected = connected,
             name = remoteParticipant.name,
@@ -36,7 +36,7 @@ class InternalRemoteParticipant(
             } ?: ParticipantPermissions()
         )
     )
-    private val isSpeakingFlow: MutableStateFlow<Boolean> = MutableStateFlow(false)
+
     private var collection: Job? = null
 
     init {
@@ -65,14 +65,17 @@ class InternalRemoteParticipant(
         }
     }
 
-    override val state: StateFlow<RemoteParticipantState>
-        get() = stateFlow.asStateFlow()
-
-    override val isSpeakingState: StateFlow<Boolean>
-        get() = isSpeakingFlow.asStateFlow()
-
     private fun startCollect() {
         if (null != collection) return
+
+        remoteParticipant.trackPublications.values.forEach {
+            if (it is RemoteTrackPublication) {
+                val (wrapper, new) = getOrCreate(it)
+
+                wrapper.setPublished(true)
+                if (new) append(wrapper)
+            }
+        }
 
         collection = scope.launch {
             remoteParticipant.events.collect {
@@ -126,8 +129,14 @@ class InternalRemoteParticipant(
                     }
 
                     is ParticipantEvent.TrackStreamStateChanged -> {
-                        Log.d("REMOTE", "track stream state $it")
-                        //TODO
+                        it.trackPublication.let { trackPublication ->
+                            if (trackPublication is RemoteTrackPublication) {
+                                val (wrapper, new) = getOrCreate(trackPublication)
+
+                                wrapper.setActive(it.streamState == Track.StreamState.ACTIVE)
+                                if (new) append(wrapper)
+                            }
+                        }
                     }
 
                     is ParticipantEvent.TrackSubscribed -> {
@@ -170,22 +179,21 @@ class InternalRemoteParticipant(
         }
     }
 
-    private fun append(track: InternalRemoteTrack) {
-        scope.launch {
-            remoteTracks.emit(remoteTracks.value + track)
-        }
-    }
-
     private fun getOrCreate(
         track: RemoteTrackPublication
-    ): Pair<InternalRemoteTrack, Boolean> {
+    ): Pair<RemoteTrack, Boolean> {
         Log.d("REMOTE", "getOrCreate for ${track.sid}")
 
         return remoteTracks.value.find { it.sid == track.sid }.let {
             if (null != it) {
+                it.updateInternalTrack(track)
                 it to false
             } else {
-                InternalRemoteTrack(scope, track) to true
+                when (kindFrom(track.kind)) {
+                    Kind.Audio -> RemoteAudioTrack(scope, track)
+                    Kind.Video -> RemoteVideoTrack(scope, track)
+                    Kind.None -> RemoteNoneTrack(scope, track)
+                } to true
             }
         }
     }

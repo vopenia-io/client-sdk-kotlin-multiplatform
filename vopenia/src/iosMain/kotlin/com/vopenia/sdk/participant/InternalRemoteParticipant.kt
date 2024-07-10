@@ -1,35 +1,32 @@
 package com.vopenia.sdk.participant
 
-import LiveKitClient.RemoteTrackPublication
 import LiveKitClient.addDelegate
 import LiveKitClient.removeDelegate
-import com.vopenia.sdk.participant.delegate.LocalParticipantDelegate
 import com.vopenia.sdk.participant.delegate.RemoteParticipantDelegate
 import com.vopenia.sdk.participant.remote.RemoteParticipant
 import com.vopenia.sdk.participant.remote.RemoteParticipantState
-import com.vopenia.sdk.participant.track.InternalRemoteTrack
+import com.vopenia.sdk.participant.track.Kind
+import com.vopenia.sdk.participant.track.RemoteAudioTrack
+import com.vopenia.sdk.participant.track.RemoteNoneTrack
 import com.vopenia.sdk.participant.track.RemoteTrack
+import com.vopenia.sdk.participant.track.RemoteTrackPublication
+import com.vopenia.sdk.participant.track.RemoteVideoTrack
+import com.vopenia.sdk.participant.track.kindFrom
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 import LiveKitClient.RemoteParticipant as RP
 
 @OptIn(ExperimentalForeignApi::class)
 class InternalRemoteParticipant(
-    private val scope: CoroutineScope,
+    scope: CoroutineScope,
     private val remoteParticipant: RP,
     connected: Boolean
-) : RemoteParticipant {
+) : RemoteParticipant(scope) {
     private var isAttached = false
 
-    private val remoteTracks = MutableStateFlow<List<InternalRemoteTrack>>(emptyList())
-    override val tracks: StateFlow<List<RemoteTrack>> = remoteTracks.asStateFlow()
-
-    private val stateFlow = MutableStateFlow(
+    override val stateFlow = MutableStateFlow(
         RemoteParticipantState(
             connected = connected,
             name = remoteParticipant.name(),
@@ -39,17 +36,8 @@ class InternalRemoteParticipant(
             ).toMultiplatform()
         )
     )
-    private val isSpeakingFlow: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
     override val identity = remoteParticipant.identity()?.stringValue()
-
-    override fun equals(other: Any?): Boolean {
-        if (other is InternalRemoteParticipant) {
-            return other.identity == identity
-        }
-
-        return false
-    }
 
     private val delegate = remoteParticipant.wrapDelegateWithDelegate(
         RemoteParticipantDelegate(
@@ -120,6 +108,16 @@ class InternalRemoteParticipant(
 
     internal fun onConnect() {
         if (!isAttached) {
+
+            remoteParticipant.trackPublications().values.forEach {
+                if (it is RemoteTrackPublication) {
+                    val (wrapper, new) = getOrCreate(it)
+
+                    wrapper.setPublished(true)
+                    if (new) append(wrapper)
+                }
+            }
+
             remoteParticipant.addDelegate(delegate)
             isAttached = true
 
@@ -140,24 +138,16 @@ class InternalRemoteParticipant(
         }
     }
 
-    override val state: StateFlow<RemoteParticipantState>
-        get() = stateFlow.asStateFlow()
-
-    override val isSpeakingState: StateFlow<Boolean>
-        get() = isSpeakingFlow.asStateFlow()
-
-    private fun append(track: InternalRemoteTrack) {
-        scope.launch {
-            remoteTracks.emit( remoteTracks.value + track)
-        }
-    }
-
-    private fun getOrCreate(track: RemoteTrackPublication): Pair<InternalRemoteTrack, Boolean> =
+    private fun getOrCreate(track: RemoteTrackPublication): Pair<RemoteTrack, Boolean> =
         remoteTracks.value.find { it.sid == track.sid().stringValue() }.let {
             if (null != it) {
                 it to false
             } else {
-                InternalRemoteTrack(scope, track) to true
+                when (kindFrom(track.kind())) {
+                    Kind.Audio -> RemoteAudioTrack(scope, track)
+                    Kind.Video -> RemoteVideoTrack(scope, track)
+                    Kind.None -> RemoteNoneTrack(scope, track)
+                } to true
             }
         }
 

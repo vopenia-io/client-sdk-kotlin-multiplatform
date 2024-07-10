@@ -1,43 +1,34 @@
 package com.vopenia.sdk.participant.track
 
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 
-class InternalRemoteTrack : RemoteTrack {
-    private val remoteTrackState = MutableStateFlow(RemoteTrackState())
-    override val state = remoteTrackState.asStateFlow()
+actual sealed class RemoteTrack : SubRemoteTrack(
+    CoroutineScope(
+        Dispatchers.Main
+    )
+) {
+    actual val track: RemoteTrackPublication = "NOTHING"
 
-    override val name = "NOTHING"
+    actual val name = "NOTHING"
 
-    override val isEnabled = false
+    actual val isEnabled = false
 
-    override val isSubscriptionAllowed = false
+    actual val isSubscriptionAllowed = false
 
-    override val kind = Kind.None
+    actual val kind = Kind.None
 
-    override val sid = ""
+    actual val sid = ""
 
-    override fun addRenderer(videoSink: VideoSink) {
-        TODO("Not yet implemented")
-    }
-
-    override fun removeRenderer(videoSink: VideoSink) {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun enable(enable: Boolean) {
+    actual suspend fun enable(enable: Boolean) {
         TODO("NotImplemented")
     }
 
-    override suspend fun subscribe(subscribe: Boolean) {
+    actual suspend fun subscribe(subscribe: Boolean) {
         TODO("NotImplemented")
     }
 
-    internal fun setSubscribed(subscribed: Boolean) {
-        TODO("NotImplemented")
-    }
+    internal actual fun updateInternalTrack(track: RemoteTrackPublication) {
 
-    internal fun setPublished(published: Boolean) {
-        TODO("NotImplemented")
     }
 }

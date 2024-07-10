@@ -1,9 +1,7 @@
 package com.vopenia.sdk.participant.track
 
-import kotlinx.coroutines.flow.StateFlow
-
-interface RemoteTrack {
-    val state: StateFlow<RemoteTrackState>
+expect sealed class RemoteTrack : SubRemoteTrack {
+    internal val track: RemoteTrackPublication
 
     val name: String
 
@@ -15,11 +13,9 @@ interface RemoteTrack {
 
     val sid: String
 
-    fun addRenderer(videoSink: VideoSink)
-
-    fun removeRenderer(videoSink: VideoSink)
-
     suspend fun enable(enable: Boolean)
 
     suspend fun subscribe(subscribe: Boolean)
+
+    internal fun updateInternalTrack(track: RemoteTrackPublication)
 }

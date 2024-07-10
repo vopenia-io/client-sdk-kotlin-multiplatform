@@ -12,49 +12,40 @@ import androidx.compose.ui.unit.dp
 import com.vopenia.sdk.Room
 import com.vopenia.sdk.compose.VideoView
 import com.vopenia.sdk.participant.remote.RemoteParticipant
-import com.vopenia.sdk.participant.track.Kind
+import com.vopenia.sdk.participant.track.RemoteVideoTrack
 import eu.codlab.compose.widgets.TextNormal
 
 @Composable
 fun RemoteParticipantCell(
     modifier: Modifier,
     room: Room,
-    remoteParticipant: RemoteParticipant
+    participant: RemoteParticipant,
+    videoTrack: RemoteVideoTrack? = null
 ) {
-    val state by remoteParticipant.state.collectAsState()
-    val tracks by remoteParticipant.tracks.collectAsState()
+    val state by participant.state.collectAsState()
 
     Card {
         Column(modifier = modifier) {
-            TextNormal(
-                text = "Identity ${remoteParticipant.identity}"
-            )
 
             TextNormal(
-                text = "Name ${state.name}"
+                text = "Connected ${state}"
             )
 
-            TextNormal(
-                text = "Permissions ${state.permissions}"
-            )
+            if (null != videoTrack) {
+                val trackState by videoTrack.state.collectAsState()
 
-            TextNormal(
-                text = "Connected ${state.connected}"
-            )
-
-            tracks.forEach {
                 TextNormal(
-                    text = "Having track ${it.name} ${it.kind} ${it.isEnabled} ${it.state.value}"
+                    text = "TrackState $trackState"
                 )
+            }
 
-                if (it.kind == Kind.Video) {
-                    VideoView(
-                        modifier = Modifier.widthIn(300.dp)
-                            .height(200.dp),
-                        room = room,
-                        track = it
-                    )
-                }
+            videoTrack?.let {
+                VideoView(
+                    modifier = Modifier.widthIn(300.dp)
+                        .height(200.dp),
+                    room = room,
+                    track = it
+                )
             }
 
         }

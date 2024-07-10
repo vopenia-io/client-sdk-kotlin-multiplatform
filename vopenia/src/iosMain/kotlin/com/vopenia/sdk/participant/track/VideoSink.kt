@@ -8,8 +8,8 @@ actual interface VideoSink {
 
     val videoView: VideoView
 
-    fun attach(track: RemoteTrack)
+    fun attach(track: RemoteVideoTrack)
 
-    fun detach(track: RemoteTrack)
+    fun detach(track: RemoteVideoTrack)
 
 }
