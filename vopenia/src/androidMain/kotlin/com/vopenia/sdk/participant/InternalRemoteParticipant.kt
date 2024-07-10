@@ -1,9 +1,13 @@
 package com.vopenia.sdk.participant
 
+import android.util.Log
 import com.vopenia.sdk.participant.remote.RemoteParticipant
 import com.vopenia.sdk.participant.remote.RemoteParticipantState
+import com.vopenia.sdk.participant.track.InternalRemoteTrack
+import com.vopenia.sdk.participant.track.RemoteTrack
 import io.livekit.android.events.ParticipantEvent
 import io.livekit.android.events.collect
+import io.livekit.android.room.track.RemoteTrackPublication
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -18,6 +22,10 @@ class InternalRemoteParticipant(
     private val remoteParticipant: RP,
     connected: Boolean
 ) : RemoteParticipant {
+
+    private val remoteTracks = MutableStateFlow<List<InternalRemoteTrack>>(emptyList())
+    override val tracks: StateFlow<List<RemoteTrack>> = remoteTracks.asStateFlow()
+
     private val stateFlow = MutableStateFlow(
         RemoteParticipantState(
             connected = connected,
@@ -110,15 +118,24 @@ class InternalRemoteParticipant(
                     }
 
                     is ParticipantEvent.TrackPublished -> {
-                        //TODO
+                        Log.d("REMOTE", "published $it")
+                        val (wrapper, new) = getOrCreate(it.publication)
+
+                        wrapper.setPublished(true)
+                        if (new) append(wrapper)
                     }
 
                     is ParticipantEvent.TrackStreamStateChanged -> {
+                        Log.d("REMOTE", "track stream state $it")
                         //TODO
                     }
 
                     is ParticipantEvent.TrackSubscribed -> {
-                        //TODO
+                        Log.d("REMOTE", "track subscribed $it")
+                        val (wrapper, new) = getOrCreate(it.publication)
+
+                        wrapper.setSubscribed(true)
+                        if (new) append(wrapper)
                     }
 
                     is ParticipantEvent.TrackSubscriptionFailed -> {
@@ -134,15 +151,42 @@ class InternalRemoteParticipant(
                     }
 
                     is ParticipantEvent.TrackUnpublished -> {
-                        //TODO
+                        Log.d("REMOTE", "unpublished $it")
+                        val (wrapper, new) = getOrCreate(it.publication)
+
+                        wrapper.setPublished(false)
+                        if (new) append(wrapper)
                     }
 
                     is ParticipantEvent.TrackUnsubscribed -> {
-                        //TODO
+                        Log.d("REMOTE", "unsubscribed $it")
+                        val (wrapper, new) = getOrCreate(it.publication)
+
+                        wrapper.setSubscribed(false)
+                        if (new) append(wrapper)
                     }
                 }
             }
         }
     }
 
+    private fun append(track: InternalRemoteTrack) {
+        scope.launch {
+            remoteTracks.emit(remoteTracks.value + track)
+        }
+    }
+
+    private fun getOrCreate(
+        track: RemoteTrackPublication
+    ): Pair<InternalRemoteTrack, Boolean> {
+        Log.d("REMOTE", "getOrCreate for ${track.sid}")
+
+        return remoteTracks.value.find { it.sid == track.sid }.let {
+            if (null != it) {
+                it to false
+            } else {
+                InternalRemoteTrack(scope, track) to true
+            }
+        }
+    }
 }

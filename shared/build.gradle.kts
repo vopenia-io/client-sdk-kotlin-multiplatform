@@ -58,6 +58,7 @@ kotlin {
             api(additionals.multiplatform.file.access)
 
             api(projects.vopenia)
+            api(project(":vopenia-compose"))
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

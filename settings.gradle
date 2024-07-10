@@ -34,6 +34,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "VopeniaSDK"
 include(":vopenia")
+include(":vopenia-compose")
 include(":vopenia-test-config")
 include(":shared")
 include(":appAndroid")

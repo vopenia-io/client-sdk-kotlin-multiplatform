@@ -20,7 +20,7 @@ class Room {
         MutableStateFlow(ConnectionState.Default)
     val connectionState: StateFlow<ConnectionState> = connectionStateEmitter.asStateFlow()
 
-    private val internalRoom = InternalRoom(
+    internal val internalRoom = InternalRoom(
         scope,
         connectionStateEmitter
     )

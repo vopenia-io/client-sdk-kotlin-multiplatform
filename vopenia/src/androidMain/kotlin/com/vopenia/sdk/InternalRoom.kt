@@ -7,11 +7,13 @@ import com.vopenia.sdk.participant.local.LocalParticipant
 import com.vopenia.sdk.participant.remote.RemoteParticipant
 import io.livekit.android.LiveKit
 import io.livekit.android.events.RoomEvent
+import io.livekit.android.renderer.TextureViewRenderer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import livekit.org.webrtc.VideoSink
 import io.livekit.android.room.participant.RemoteParticipant as RP
 
 internal actual class InternalRoom actual constructor(
@@ -23,6 +25,10 @@ internal actual class InternalRoom actual constructor(
         scope,
         room.localParticipant
     )
+
+    internal fun initVideoRenderer(textureViewRenderer: TextureViewRenderer) {
+        room.initVideoRenderer(textureViewRenderer)
+    }
 
     private val participants = MutableStateFlow<List<InternalRemoteParticipant>>(emptyList())
 

@@ -18,15 +18,53 @@ import platform.darwin.NSObject
 class RemoteParticipantDelegate(
     private val onTrackPublished: (RemoteTrackPublication) -> Unit,
     private val onTrackUnpublished: (RemoteTrackPublication) -> Unit,
+    private val onTrackSubscribed: (RemoteTrackPublication) -> Unit,
+    private val onTrackUnsubscribed: (RemoteTrackPublication) -> Unit,
+    // add error management for unsusbcribe
     private val onTrackPublicationIsMuted: (TrackPublication, isMuted: Boolean) -> Unit,
     private val onConnectionQuality: (ConnectionQuality) -> Unit,
     private val onIsSpeaking: (Boolean) -> Unit,
     private val onMetadataUpdated: (String?) -> Unit,
     private val onNameUpdated: (String?) -> Unit,
     private val onPermissionsUpdated: (ParticipantPermissions) -> Unit
-
-
 ) : ParticipantDelegateProtocol, NSObject() {
+
+    @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
+    @ObjCSignatureOverride
+    override fun remoteParticipant(
+        participant: RemoteParticipant,
+        didPublishTrack: RemoteTrackPublication
+    ) {
+        onTrackSubscribed(didPublishTrack)
+    }
+
+    @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
+    @ObjCSignatureOverride
+    override fun remoteParticipant(
+        participant: RemoteParticipant,
+        didUnpublishTrack: RemoteTrackPublication
+    ) {
+        onTrackSubscribed(didUnpublishTrack)
+    }
+
+    @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
+    @ObjCSignatureOverride
+    override fun participant(
+        participant: RemoteParticipant,
+        didSubscribeTrack: RemoteTrackPublication
+    ) {
+        onTrackSubscribed(didSubscribeTrack)
+    }
+
+    @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
+    @ObjCSignatureOverride
+    override fun participant(
+        participant: RemoteParticipant,
+        didUnsubscribeTrack: RemoteTrackPublication
+    ) {
+        onTrackUnsubscribed(didUnsubscribeTrack)
+    }
+
     override fun participant(
         participant: Participant,
         trackPublication: TrackPublication,
@@ -34,7 +72,6 @@ class RemoteParticipantDelegate(
     ) {
         onTrackPublicationIsMuted(trackPublication, didUpdateIsMuted)
     }
-
 
     override fun participant(
         participant: RemoteParticipant,

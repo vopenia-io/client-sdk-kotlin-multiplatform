@@ -1,0 +1,14 @@
+package com.vopenia.sdk.compose
+
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import com.vopenia.sdk.Room
+import com.vopenia.sdk.participant.track.RemoteTrack
+
+@Composable
+expect fun VideoView(
+    modifier: Modifier,
+    room: Room,
+    track: RemoteTrack,
+    isMirror: Boolean = false,
+)

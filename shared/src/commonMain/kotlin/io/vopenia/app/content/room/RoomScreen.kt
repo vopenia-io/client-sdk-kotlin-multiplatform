@@ -48,7 +48,7 @@ fun RoomScreen(
             }
 
             items(participants.size) {
-                RemoteParticipantCell(Modifier, participants[it])
+                RemoteParticipantCell(Modifier, room, participants[it])
             }
         }
     }
