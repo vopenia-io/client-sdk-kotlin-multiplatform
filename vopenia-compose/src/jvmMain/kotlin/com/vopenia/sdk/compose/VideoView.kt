@@ -14,8 +14,7 @@ actual fun VideoView(
     scaleType: ScaleType,
     isMirror: Boolean,
 ) {
-    // nothing for now
     Column(modifier = modifier) {
-
+        // nothing for now
     }
 }

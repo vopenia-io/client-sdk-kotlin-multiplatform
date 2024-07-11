@@ -20,7 +20,6 @@ data class AvatarSize(
     val userName: TextUnit = 12.sp
 )
 
-
 private val defaultFontSizes = FontSizes()
 
 private val jvmFontSizes = FontSizes(

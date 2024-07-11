@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-abstract class SubRemoteTrack(protected val scope: CoroutineScope) {
+open class SubRemoteTrack(protected val scope: CoroutineScope) {
     private val remoteTrackState = MutableStateFlow(RemoteTrackState())
     val state = remoteTrackState.asStateFlow()
 

@@ -6,16 +6,14 @@ import LiveKitClient.Room
 import LiveKitClient.RoomDelegateProtocol
 import LiveKitClient.RoomOptions
 import LiveKitClient.addDelegate
-import LiveKitClient.setMicrophoneWithEnabled
 import com.vopenia.sdk.events.ConnectionState
 import com.vopenia.sdk.participant.InternalLocalParticipant
 import com.vopenia.sdk.participant.InternalRemoteParticipant
-import com.vopenia.sdk.rooms_delegate.RoomDelegateConnectionState
+import com.vopenia.sdk.room.RoomDelegateConnectionState
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException

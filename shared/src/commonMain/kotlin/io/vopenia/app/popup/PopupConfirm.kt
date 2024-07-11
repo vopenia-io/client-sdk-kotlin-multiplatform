@@ -1,6 +1,5 @@
 package io.vopenia.app.popup
 
-
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.OutlinedButton

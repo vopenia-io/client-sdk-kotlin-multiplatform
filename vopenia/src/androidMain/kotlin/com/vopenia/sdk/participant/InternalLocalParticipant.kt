@@ -32,15 +32,15 @@ class InternalLocalParticipant(
             localParticipant.events.collect {
                 when (it) {
                     is ParticipantEvent.DataReceived -> {
-                        //TODO
+                        // TODO
                     }
 
                     is ParticipantEvent.LocalTrackPublished -> {
-                        //TODO
+                        // TODO
                     }
 
                     is ParticipantEvent.LocalTrackUnpublished -> {
-                        //TODO
+                        // TODO
                     }
 
                     is ParticipantEvent.MetadataChanged -> {
@@ -68,39 +68,39 @@ class InternalLocalParticipant(
                     }
 
                     is ParticipantEvent.TrackMuted -> {
-                        //TODO
+                        // TODO
                     }
 
                     is ParticipantEvent.TrackPublished -> {
-                        //TODO
+                        // TODO
                     }
 
                     is ParticipantEvent.TrackStreamStateChanged -> {
-                        //TODO
+                        // TODO
                     }
 
                     is ParticipantEvent.TrackSubscribed -> {
-                        //TODO
+                        // TODO
                     }
 
                     is ParticipantEvent.TrackSubscriptionFailed -> {
-                        //TODO
+                        // TODO
                     }
 
                     is ParticipantEvent.TrackSubscriptionPermissionChanged -> {
-                        //TODO
+                        // TODO
                     }
 
                     is ParticipantEvent.TrackUnmuted -> {
-                        //TODO
+                        // TODO
                     }
 
                     is ParticipantEvent.TrackUnpublished -> {
-                        //TODO
+                        // TODO
                     }
 
                     is ParticipantEvent.TrackUnsubscribed -> {
-                        //TODO
+                        // TODO
                     }
                 }
             }
@@ -116,5 +116,4 @@ class InternalLocalParticipant(
     override suspend fun enableMicrophone(enabled: Boolean) {
         localParticipant.setMicrophoneEnabled(enabled)
     }
-
 }

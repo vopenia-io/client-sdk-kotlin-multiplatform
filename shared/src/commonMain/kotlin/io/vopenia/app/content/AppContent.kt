@@ -23,7 +23,7 @@ fun AppContent() {
         null == state.room -> JoinScreen(modifier)
         null != state.room -> RoomScreen(modifier)
         else -> {
-
+            // nothing
         }
     }
 }

@@ -44,4 +44,7 @@ abstract class RemoteParticipant(protected val scope: CoroutineScope) {
         }
     }
 
+    override fun hashCode(): Int {
+        return state.value.hashCode()
+    }
 }

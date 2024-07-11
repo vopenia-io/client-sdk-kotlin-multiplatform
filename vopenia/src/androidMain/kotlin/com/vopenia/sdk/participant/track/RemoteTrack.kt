@@ -17,7 +17,7 @@ actual sealed class RemoteTrack(
 
     actual val name = track.name
 
-    actual val isEnabled = track.isAutoManaged //?
+    actual val isEnabled = track.isAutoManaged // ?
 
     actual val isSubscriptionAllowed = track.subscriptionAllowed
 

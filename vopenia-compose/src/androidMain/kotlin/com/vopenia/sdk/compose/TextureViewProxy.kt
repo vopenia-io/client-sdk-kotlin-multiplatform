@@ -1,6 +1,5 @@
 package com.vopenia.sdk.compose
 
-
 import android.content.Context
 import android.view.Gravity
 import android.view.ViewGroup
@@ -18,6 +17,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.vopenia.sdk.Room
 import com.vopenia.sdk.initVideoRenderer
 import com.vopenia.sdk.participant.track.RemoteVideoTrack
+import com.vopenia.sdk.utils.Log
 import io.livekit.android.renderer.TextureViewRenderer
 import livekit.org.webrtc.RendererCommon
 
@@ -43,20 +43,20 @@ fun TextureViewRendererWithProxy(
     LaunchedEffect(track, state.subscribed) {
         androidView?.let { view ->
             if (previousTrack != track) {
-                log("VideoView", "removing because previous is different")
+                Log.d("VideoView", "removing because previous is different")
                 previousTrack?.removeRenderer(view)
             }
 
             if (state.subscribed) {
-                log("VideoView", "removing first")
+                Log.d("VideoView", "removing first")
                 track.removeRenderer(view)
             }
 
-            log("VideoView", "attaching")
+            Log.d("VideoView", "attaching")
             track.addRenderer(view)
 
             if (previousTrack != track) {
-                log("VideoView", "now set the previous to the current")
+                Log.d("VideoView", "now set the previous to the current")
                 previousTrack = track
             }
         }
@@ -64,7 +64,7 @@ fun TextureViewRendererWithProxy(
 
     LaunchedEffect(scalingType, isMirror) {
         androidView?.let {
-            log("VideoView", "update scaling or mirror")
+            Log.d("VideoView", "update scaling or mirror")
             it.setMirror(isMirror)
             it.setScalingType(scalingType)
         }
@@ -72,7 +72,7 @@ fun TextureViewRendererWithProxy(
 
     DisposableEffect(true) {
         onDispose {
-            log("VideoView", "clean up...")
+            Log.d("VideoView", "clean up...")
             androidView?.let {
                 track.removeRenderer(it)
             }
@@ -82,7 +82,7 @@ fun TextureViewRendererWithProxy(
     AndroidView(
         modifier = modifier,
         factory = { context ->
-            log("VideoView", "create !")
+            Log.d("VideoView", "create !")
             TextureViewRendererWrapper(context).let { view ->
                 room.initVideoRenderer(view.child)
 
@@ -90,7 +90,7 @@ fun TextureViewRendererWithProxy(
             }
         },
         update = { parent ->
-            log("VideoView", "update view")
+            Log.d("VideoView", "update view")
             val view = parent.child
             view.setMirror(isMirror)
             view.setScalingType(scalingType)
@@ -100,7 +100,7 @@ fun TextureViewRendererWithProxy(
             }
         },
         onRelease = {
-            log("VideoView", "release all")
+            Log.d("VideoView", "release all")
             it.release()
         }
     )

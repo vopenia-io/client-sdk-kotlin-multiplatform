@@ -60,10 +60,9 @@ class AppModelPreview : AppModel {
     override fun leaveRoom() {
         // nothing
     }
-
 }
 
-class AppModelImpl() : StateViewModel<AppModelState>(AppModelState()), AppModel {
+class AppModelImpl : StateViewModel<AppModelState>(AppModelState()), AppModel {
     private val backendConnection = BackendConnection(baseUrl)
 
     override var onBackPressed: AppBackPressProvider = AppBackPressProvider()

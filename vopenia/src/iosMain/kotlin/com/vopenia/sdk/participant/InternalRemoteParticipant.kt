@@ -107,34 +107,33 @@ class InternalRemoteParticipant(
     )
 
     internal fun onConnect() {
-        if (!isAttached) {
+        if (isAttached) return
 
-            remoteParticipant.trackPublications().values.forEach {
-                if (it is RemoteTrackPublication) {
-                    val (wrapper, new) = getOrCreate(it)
+        remoteParticipant.trackPublications().values.forEach {
+            if (it is RemoteTrackPublication) {
+                val (wrapper, new) = getOrCreate(it)
 
-                    wrapper.setPublished(true)
-                    if (new) append(wrapper)
-                }
+                wrapper.setPublished(true)
+                if (new) append(wrapper)
             }
+        }
 
-            remoteParticipant.addDelegate(delegate)
-            isAttached = true
+        remoteParticipant.addDelegate(delegate)
+        isAttached = true
 
-            scope.async {
-                stateFlow.emit(stateFlow.value.copy(connected = true))
-            }
+        scope.async {
+            stateFlow.emit(stateFlow.value.copy(connected = true))
         }
     }
 
     internal fun onDisconnect() {
-        if (isAttached) {
-            remoteParticipant.removeDelegate(delegate)
-            isAttached = false
+        if (!isAttached) return
 
-            scope.async {
-                stateFlow.emit(stateFlow.value.copy(connected = false))
-            }
+        remoteParticipant.removeDelegate(delegate)
+        isAttached = false
+
+        scope.async {
+            stateFlow.emit(stateFlow.value.copy(connected = false))
         }
     }
 
@@ -150,5 +149,4 @@ class InternalRemoteParticipant(
                 } to true
             }
         }
-
 }

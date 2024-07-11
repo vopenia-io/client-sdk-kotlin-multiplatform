@@ -1,6 +1,5 @@
 package io.vopenia.app.content.initialize
 
-
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -21,7 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import eu.codlab.compose.widgets.StatusBarAndNavigation
-import io.vopenia.app.AppModel
 import io.vopenia.app.LocalApp
 import io.vopenia.app.preview.PreviewWrapperDarkLightRow
 import io.vopenia.app.theme.AppColor

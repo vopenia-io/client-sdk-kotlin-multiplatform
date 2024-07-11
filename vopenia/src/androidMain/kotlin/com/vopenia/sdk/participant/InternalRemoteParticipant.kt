@@ -25,7 +25,6 @@ class InternalRemoteParticipant(
     private val remoteParticipant: RP,
     connected: Boolean
 ) : RemoteParticipant(scope) {
-
     override val stateFlow = MutableStateFlow(
         RemoteParticipantState(
             connected = connected,
@@ -65,6 +64,7 @@ class InternalRemoteParticipant(
         }
     }
 
+    @Suppress("LongMethod", "ComplexMethod")
     private fun startCollect() {
         if (null != collection) return
 
@@ -81,15 +81,15 @@ class InternalRemoteParticipant(
             remoteParticipant.events.collect {
                 when (it) {
                     is ParticipantEvent.DataReceived -> {
-                        //TODO
+                        // TODO
                     }
 
                     is ParticipantEvent.LocalTrackPublished -> {
-                        //TODO
+                        // TODO
                     }
 
                     is ParticipantEvent.LocalTrackUnpublished -> {
-                        //TODO
+                        // TODO
                     }
 
                     is ParticipantEvent.MetadataChanged -> {
@@ -117,7 +117,7 @@ class InternalRemoteParticipant(
                     }
 
                     is ParticipantEvent.TrackMuted -> {
-                        //TODO
+                        // TODO
                     }
 
                     is ParticipantEvent.TrackPublished -> {
@@ -148,15 +148,15 @@ class InternalRemoteParticipant(
                     }
 
                     is ParticipantEvent.TrackSubscriptionFailed -> {
-                        //TODO
+                        // TODO
                     }
 
                     is ParticipantEvent.TrackSubscriptionPermissionChanged -> {
-                        //TODO
+                        // TODO
                     }
 
                     is ParticipantEvent.TrackUnmuted -> {
-                        //TODO
+                        // TODO
                     }
 
                     is ParticipantEvent.TrackUnpublished -> {

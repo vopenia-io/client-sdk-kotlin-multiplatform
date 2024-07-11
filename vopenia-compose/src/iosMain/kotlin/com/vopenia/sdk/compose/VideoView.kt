@@ -26,16 +26,16 @@ actual fun VideoView(
     var previousTrack: RemoteVideoTrack? by remember { mutableStateOf(null) }
     var rememberedWrapper: VideoViewWrapper? by remember { mutableStateOf(null) }
 
-    val layoutMode: Long = when(scaleType) {
+    val layoutMode: Long = when (scaleType) {
         ScaleType.Fill -> 1L
         ScaleType.Fit -> 0L
     }
 
     val mirrorMode: Long = if (isMirror) {
-            2L
-        } else {
-            1L
-        }
+        2L
+    } else {
+        1L
+    }
 
     LaunchedEffect(track) {
         previousTrack?.let {

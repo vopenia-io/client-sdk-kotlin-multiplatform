@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -35,6 +34,7 @@ import io.vopenia.app.LocalFontSizes
 import io.vopenia.app.preview.PreviewWrapperLightColumn
 import org.jetbrains.compose.resources.painterResource
 
+@Suppress("LongMethod")
 @Composable
 fun JoinScreen(
     modifier: Modifier = Modifier
@@ -48,14 +48,7 @@ fun JoinScreen(
             .fillMaxSize(),
         contentAlignment = Alignment.BottomCenter
     ) {
-        if (LocalDarkTheme.current) {
-            Image(
-                painter = painterResource(Res.drawable.join_background),
-                contentDescription = "",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
-        }
+        BackgroundDark()
 
         Column(
             modifier = modifier.imePadding()
@@ -63,7 +56,6 @@ fun JoinScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
             Box(
                 modifier = Modifier.widthIn(0.dp, 250.dp),
                 contentAlignment = Alignment.Center
@@ -110,8 +102,8 @@ fun JoinScreen(
 
                     Button(
                         modifier = internalModifier,
-                        enabled = model.room.text.isNotEmpty()
-                                && model.participant.text.isNotEmpty(),
+                        enabled = model.room.text.isNotEmpty() &&
+                                model.participant.text.isNotEmpty(),
                         onClick = { model.join() }
                     ) {
                         TextNormal(
@@ -122,17 +114,33 @@ fun JoinScreen(
             }
         }
 
-        SafeArea {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.Bottom,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                TextNormal(
-                    fontSize = LocalFontSizes.current.joinRoom.copyright,
-                    text = "Copyright © 2024 - The Renegades"
-                )
-            }
+        Copyright()
+    }
+}
+
+@Composable
+private fun BackgroundDark() {
+    if (!LocalDarkTheme.current) return
+    Image(
+        painter = painterResource(Res.drawable.join_background),
+        contentDescription = "",
+        modifier = Modifier.fillMaxSize(),
+        contentScale = ContentScale.Crop
+    )
+}
+
+@Composable
+private fun Copyright() {
+    SafeArea {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Bottom,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            TextNormal(
+                fontSize = LocalFontSizes.current.joinRoom.copyright,
+                text = "Copyright © 2024 - The Renegades"
+            )
         }
     }
 }

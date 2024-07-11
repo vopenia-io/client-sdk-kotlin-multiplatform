@@ -1,7 +1,6 @@
 package com.vopenia.sdk
 
 import com.vopenia.sdk.events.ConnectionState
-import com.vopenia.sdk.participant.local.LocalParticipant
 import com.vopenia.sdk.permissions.Permission
 import com.vopenia.sdk.permissions.PermissionRefused
 import com.vopenia.sdk.permissions.PermissionsController
@@ -10,7 +9,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-
 
 class Room {
     private val scope = CoroutineScope(Dispatchers.IO)

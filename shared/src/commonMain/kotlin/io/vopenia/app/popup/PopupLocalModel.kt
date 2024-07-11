@@ -1,6 +1,5 @@
 package io.vopenia.app.popup
 
-
 import eu.codlab.viewmodel.StateViewModel
 import eu.codlab.viewmodel.launch
 import korlibs.io.util.UUID

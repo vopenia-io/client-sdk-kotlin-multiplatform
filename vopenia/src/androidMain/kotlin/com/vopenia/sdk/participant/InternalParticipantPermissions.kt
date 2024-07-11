@@ -2,7 +2,6 @@ package com.vopenia.sdk.participant
 
 import io.livekit.android.room.participant.ParticipantPermission as PP
 
-
 class InternalParticipantPermissions(
     val permissions: PP
 ) {

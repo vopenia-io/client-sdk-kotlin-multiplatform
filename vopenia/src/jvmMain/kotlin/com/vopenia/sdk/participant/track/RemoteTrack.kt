@@ -29,6 +29,6 @@ actual sealed class RemoteTrack : SubRemoteTrack(
     }
 
     internal actual fun updateInternalTrack(track: RemoteTrackPublication) {
-
+        // nothing
     }
 }

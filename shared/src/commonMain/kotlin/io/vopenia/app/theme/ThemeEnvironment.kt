@@ -1,6 +1,5 @@
 package io.vopenia.app.theme
 
-
 import androidx.compose.ui.graphics.Color
 import eu.codlab.compose.theme.ColorBottomNavigations
 import eu.codlab.compose.theme.ColorTheme

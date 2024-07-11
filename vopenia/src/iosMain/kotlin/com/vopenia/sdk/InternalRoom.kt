@@ -1,7 +1,6 @@
 package com.vopenia.sdk
 
 import com.vopenia.sdk.events.ConnectionState
-import com.vopenia.sdk.participant.InternalLocalParticipant
 import com.vopenia.sdk.participant.local.LocalParticipant
 import com.vopenia.sdk.participant.remote.RemoteParticipant
 import kotlinx.coroutines.CoroutineScope

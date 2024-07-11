@@ -1,8 +1,6 @@
 package com.vopenia.sdk.participant.delegate
 
 import LiveKitClient.ConnectionQuality
-import LiveKitClient.LocalParticipant
-import LiveKitClient.LocalTrackPublication
 import LiveKitClient.Participant
 import LiveKitClient.ParticipantDelegateProtocol
 import LiveKitClient.ParticipantPermissions
@@ -14,6 +12,7 @@ import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.ObjCSignatureOverride
 import platform.darwin.NSObject
 
+@Suppress("LongParameterList")
 @OptIn(ExperimentalForeignApi::class)
 class RemoteParticipantDelegate(
     private val onTrackPublished: (RemoteTrackPublication) -> Unit,
@@ -28,14 +27,13 @@ class RemoteParticipantDelegate(
     private val onNameUpdated: (String?) -> Unit,
     private val onPermissionsUpdated: (ParticipantPermissions) -> Unit
 ) : ParticipantDelegateProtocol, NSObject() {
-
     @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
     @ObjCSignatureOverride
     override fun remoteParticipant(
         participant: RemoteParticipant,
         didPublishTrack: RemoteTrackPublication
     ) {
-        onTrackSubscribed(didPublishTrack)
+        onTrackPublished(didPublishTrack)
     }
 
     @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
@@ -44,7 +42,7 @@ class RemoteParticipantDelegate(
         participant: RemoteParticipant,
         didUnpublishTrack: RemoteTrackPublication
     ) {
-        onTrackSubscribed(didUnpublishTrack)
+        onTrackUnpublished(didUnpublishTrack)
     }
 
     @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")

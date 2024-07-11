@@ -25,6 +25,7 @@ kotlin {
             implementation(compose.ui)
 
             implementation(projects.vopenia)
+            implementation(projects.vopeniaUtils)
         }
         androidMain.dependencies {
             implementation(libs.livekit.android)

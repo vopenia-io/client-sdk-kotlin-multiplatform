@@ -83,16 +83,14 @@ class RoomModel(
         ) {
             videoTrack.state.collect { newState ->
                 var originalTracks = states.value.participantCells
-                println("launchForParticipant -> on video track ${videoTrack.sid} -> ${newState}")
+                println("launchForParticipant -> on video track ${videoTrack.sid} -> $newState")
 
                 val empty = originalTracks.find {
-                    it.participant.identity == participant.identity
-                            && it.sid == null
+                    it.participant.identity == participant.identity && it.sid == null
                 }
 
                 val matching = originalTracks.find {
-                    it.participant.identity == participant.identity
-                            && it.sid == videoTrack.sid
+                    it.participant.identity == participant.identity && it.sid == videoTrack.sid
                 }
 
                 if (null != matching) {
@@ -102,12 +100,16 @@ class RoomModel(
 
                     println("launchForParticipant -> this video track is not known but we can squeeze it")
                     originalTracks = originalTracks + ParticipantCell(
-                        participant, videoTrack, sid = videoTrack.sid
+                        participant,
+                        videoTrack,
+                        sid = videoTrack.sid
                     )
                 } else {
                     println("launchForParticipant -> this video track is not known, we append it")
                     originalTracks = originalTracks + ParticipantCell(
-                        participant, videoTrack, sid = videoTrack.sid
+                        participant,
+                        videoTrack,
+                        sid = videoTrack.sid
                     )
                 }
 

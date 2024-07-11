@@ -29,7 +29,6 @@ fun RoomScreen(
     val state by app.states.collectAsState()
 
     val room = state.room ?: return
-    val participants by room.remoteParticipants.collectAsState()
 
     val model = rememberViewModel { RoomModel(room) }
     val participantCellsState by model.states.collectAsState()
@@ -38,6 +37,7 @@ fun RoomScreen(
     val localParticipant = room.localParticipant
     println("on recomposition...")
 
+    @Suppress("MagicNumber")
     val columns = when (LocalWindow.current) {
         WindowType.SMARTPHONE_TINY -> 1
         WindowType.SMARTPHONE -> 1

@@ -1,4 +1,4 @@
-package com.vopenia.sdk.rooms_delegate
+package com.vopenia.sdk.room
 
 import LiveKitClient.ConnectionState
 import LiveKitClient.LiveKitError
@@ -6,7 +6,6 @@ import LiveKitClient.RemoteParticipant
 import LiveKitClient.Room
 import LiveKitClient.RoomDelegateProtocol
 import com.vopenia.sdk.NSErrorException
-import com.vopenia.sdk.participant.InternalRemoteParticipant
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.ObjCSignatureOverride
 import platform.darwin.NSObject
@@ -66,6 +65,6 @@ class RoomDelegateConnectionState(
     @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
     @ObjCSignatureOverride
     override fun room(room: Room, participantDidDisconnect: RemoteParticipant) {
-        onParticipantConnected(participantDidDisconnect)
+        onParticipantDisconnected(participantDidDisconnect)
     }
 }

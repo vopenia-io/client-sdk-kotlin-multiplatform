@@ -21,8 +21,6 @@ class LocalParticipantDelegate(
     private val onMetadataUpdated: (String?) -> Unit,
     private val onNameUpdated: (String?) -> Unit,
     private val onPermissionsUpdated: (ParticipantPermissions) -> Unit
-
-
 ) : ParticipantDelegateProtocol, NSObject() {
     override fun participant(
         participant: Participant,

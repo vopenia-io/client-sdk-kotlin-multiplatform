@@ -3,14 +3,13 @@ package com.vopenia.sdk.utils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
-internal fun <T, M> StateFlow<T>.map(
-    coroutineScope : CoroutineScope,
-    mapper : (value : T) -> M
-) : StateFlow<M> = map { mapper(it) }.stateIn(
+fun <T, M> StateFlow<T>.map(
+    coroutineScope: CoroutineScope,
+    mapper: (value: T) -> M
+): StateFlow<M> = map { mapper(it) }.stateIn(
     coroutineScope,
     SharingStarted.Eagerly,
     mapper(value)

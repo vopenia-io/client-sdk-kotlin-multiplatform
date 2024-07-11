@@ -55,7 +55,7 @@ private fun BottomActionsPreview() {
         BottomActions(
             modifier,
             onLeave = {
-
+                // nothing
             }
         )
     }

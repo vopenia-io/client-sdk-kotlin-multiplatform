@@ -68,8 +68,7 @@ fun RemoteParticipantCell(
             }
 
             RenderUserName(
-                participant = participant,
-                videoTrack = videoTrack
+                participant = participant
             )
         }
     }
@@ -78,8 +77,7 @@ fun RemoteParticipantCell(
 @Composable
 fun RenderUserName(
     modifier: Modifier = Modifier,
-    participant: RemoteParticipant,
-    videoTrack: RemoteVideoTrack?
+    participant: RemoteParticipant
 ) {
     val state by participant.state.collectAsState()
 

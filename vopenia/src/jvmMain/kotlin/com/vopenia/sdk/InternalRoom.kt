@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
+@Suppress("UnusedPrivateMember")
 internal actual class InternalRoom actual constructor(
     private val scope: CoroutineScope,
     private val connectionStateEmitter: MutableStateFlow<ConnectionState>
@@ -42,7 +43,6 @@ internal actual class InternalRoom actual constructor(
             override suspend fun enableMicrophone(enabled: Boolean) {
                 // not available
             }
-
         }
 
     private val remoteParticipantsState = MutableStateFlow<List<RemoteParticipant>>(emptyList())

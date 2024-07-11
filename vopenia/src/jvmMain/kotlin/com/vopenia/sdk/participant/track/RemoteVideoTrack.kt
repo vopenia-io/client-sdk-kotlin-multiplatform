@@ -1,12 +1,11 @@
 package com.vopenia.sdk.participant.track
 
 actual class RemoteVideoTrack : RemoteTrack() {
-
-    actual  fun addRenderer(videoSink: VideoSink) {
+    actual fun addRenderer(videoSink: VideoSink) {
         TODO("Not yet implemented")
     }
 
-    actual  fun removeRenderer(videoSink: VideoSink) {
+    actual fun removeRenderer(videoSink: VideoSink) {
         TODO("Not yet implemented")
     }
 }
