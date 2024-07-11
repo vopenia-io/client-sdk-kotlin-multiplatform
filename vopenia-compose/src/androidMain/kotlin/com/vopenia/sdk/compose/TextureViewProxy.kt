@@ -26,7 +26,7 @@ import livekit.org.webrtc.RendererCommon
 fun TextureViewRendererWithProxy(
     modifier: Modifier = Modifier,
     room: Room,
-    scalingType: RendererCommon.ScalingType = RendererCommon.ScalingType.SCALE_ASPECT_FIT,
+    scaleType: ScaleType,
     track: RemoteVideoTrack,
     isMirror: Boolean,
 ) {
@@ -34,6 +34,11 @@ fun TextureViewRendererWithProxy(
     var previousTrack: RemoteVideoTrack? by remember { mutableStateOf(null) }
 
     val state by track.state.collectAsState()
+
+    val scalingType = when (scaleType) {
+        ScaleType.Fill -> RendererCommon.ScalingType.SCALE_ASPECT_FILL
+        ScaleType.Fit -> RendererCommon.ScalingType.SCALE_ASPECT_FIT
+    }
 
     LaunchedEffect(track, state.subscribed) {
         androidView?.let { view ->

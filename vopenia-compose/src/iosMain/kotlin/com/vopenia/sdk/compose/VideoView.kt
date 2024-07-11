@@ -20,10 +20,22 @@ actual fun VideoView(
     modifier: Modifier,
     room: Room,
     track: RemoteVideoTrack,
+    scaleType: ScaleType,
     isMirror: Boolean,
 ) {
     var previousTrack: RemoteVideoTrack? by remember { mutableStateOf(null) }
     var rememberedWrapper: VideoViewWrapper? by remember { mutableStateOf(null) }
+
+    val layoutMode: Long = when(scaleType) {
+        ScaleType.Fill -> 1L
+        ScaleType.Fit -> 0L
+    }
+
+    val mirrorMode: Long = if (isMirror) {
+            2L
+        } else {
+            1L
+        }
 
     LaunchedEffect(track) {
         previousTrack?.let {
@@ -33,6 +45,13 @@ actual fun VideoView(
         rememberedWrapper?.attach(track)
 
         previousTrack = track
+    }
+
+    LaunchedEffect(mirrorMode, layoutMode) {
+        rememberedWrapper?.videoView?.let {
+            it.setMirrorMode(mirrorMode)
+            it.setLayoutMode(layoutMode)
+        }
     }
 
     UIKitView(
@@ -46,14 +65,8 @@ actual fun VideoView(
         },
         modifier = modifier,
         update = {
-            //TODO 2L -> mirror, 1L -> OFF, 0L -> auto
-            it.setMirrorMode(
-                if (isMirror) {
-                    2L
-                } else {
-                    1L
-                }
-            )
+            it.setMirrorMode(mirrorMode)
+            it.setLayoutMode(layoutMode)
         },
         onRelease = {
             rememberedWrapper?.detach(track)

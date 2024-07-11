@@ -11,5 +11,6 @@ expect fun VideoView(
     modifier: Modifier,
     room: Room,
     track: RemoteVideoTrack,
+    scaleType: ScaleType,
     isMirror: Boolean = false,
 )

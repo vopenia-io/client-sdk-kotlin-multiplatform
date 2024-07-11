@@ -17,13 +17,13 @@ actual fun VideoView(
     modifier: Modifier,
     room: Room,
     track: RemoteVideoTrack,
+    scaleType: ScaleType,
     isMirror: Boolean,
 ) {
-
-    // nothing for now
     TextureViewRendererWithProxy(
         modifier,
         room,
+        scaleType = scaleType,
         isMirror = isMirror,
         track = track
     )

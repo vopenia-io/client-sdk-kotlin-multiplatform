@@ -7,12 +7,17 @@ import eu.codlab.platform.currentPlatform
 
 data class FontSizes(
     val joinRoom: JoinRoomSize = JoinRoomSize(),
+    val avatarSize: AvatarSize = AvatarSize()
 )
 
 data class JoinRoomSize(
     val subTitle: TextUnit = 18.sp,
     val title: TextUnit = 20.sp,
     val copyright: TextUnit = 8.sp
+)
+
+data class AvatarSize(
+    val userName: TextUnit = 12.sp
 )
 
 
@@ -24,6 +29,9 @@ private val jvmFontSizes = FontSizes(
         title = 18.sp,
         copyright = 6.sp
     ),
+    avatarSize = AvatarSize(
+        userName = 10.sp
+    )
 )
 
 fun createFontSizes(platform: Platform = currentPlatform) = when (platform) {

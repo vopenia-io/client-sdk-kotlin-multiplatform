@@ -11,6 +11,7 @@ actual fun VideoView(
     modifier: Modifier,
     room: Room,
     track: RemoteVideoTrack,
+    scaleType: ScaleType,
     isMirror: Boolean,
 ) {
     // nothing for now
