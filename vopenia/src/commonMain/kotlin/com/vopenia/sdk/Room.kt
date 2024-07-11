@@ -42,4 +42,8 @@ class Room {
 
         internalRoom.connect(url, token)
     }
+
+    fun disconnect() {
+        internalRoom.disconnect()
+    }
 }

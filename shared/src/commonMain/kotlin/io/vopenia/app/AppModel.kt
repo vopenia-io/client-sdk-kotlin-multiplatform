@@ -6,6 +6,7 @@ import eu.codlab.viewmodel.StateViewModel
 import eu.codlab.viewmodel.launch
 import io.vopenia.app.http.BackendConnection
 import io.vopenia.app.session.SavedSession
+import korlibs.io.async.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -35,6 +36,8 @@ interface AppModel {
     fun initialize()
 
     fun joinRoom(participant: String, room: String)
+
+    fun leaveRoom()
 }
 
 class AppModelPreview : AppModel {
@@ -51,6 +54,10 @@ class AppModelPreview : AppModel {
     }
 
     override fun joinRoom(participant: String, room: String) {
+        // nothing
+    }
+
+    override fun leaveRoom() {
         // nothing
     }
 
@@ -100,6 +107,13 @@ class AppModelImpl() : StateViewModel<AppModelState>(AppModelState()), AppModel 
 
             val token = backendConnection.token(participant, room)
             roomObject.connect(token.url, token.token)
+        }
+    }
+
+    override fun leaveRoom() {
+        launch {
+            states.value.room?.disconnect()
+            updateState { copy(room = null) }
         }
     }
 }
