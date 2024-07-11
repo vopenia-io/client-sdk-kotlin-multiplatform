@@ -32,7 +32,7 @@ internal actual class InternalRoom actual constructor(
 
             private val isSpeakingStateFlow = MutableStateFlow(true)
             override val identity: String?
-                get() = TODO("Not yet implemented")
+                get() = "Not yet implemented"
 
             override val state: StateFlow<LocalParticipantState>
                 get() = stateFlow.asStateFlow()
@@ -44,6 +44,8 @@ internal actual class InternalRoom actual constructor(
             }
 
         }
+
+    private val remoteParticipantsState = MutableStateFlow<List<RemoteParticipant>>(emptyList())
     actual val remoteParticipants: StateFlow<List<RemoteParticipant>>
-        get() = TODO("Not yet implemented")
+        get() = remoteParticipantsState.asStateFlow()
 }

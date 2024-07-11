@@ -64,6 +64,9 @@ kotlin {
             implementation(libs.livekit.android)
             api(libs.androidx.fragment)
         }
+        jvmMain.dependencies {
+            implementation(additionals.kotlinx.coroutines.jvm)
+        }
     }
 }
 

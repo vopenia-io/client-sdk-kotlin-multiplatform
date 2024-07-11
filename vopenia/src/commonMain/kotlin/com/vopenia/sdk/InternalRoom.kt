@@ -7,7 +7,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-internal expect class InternalRoom constructor(
+internal expect class InternalRoom(
     scope: CoroutineScope,
     connectionStateEmitter: MutableStateFlow<ConnectionState>
 ) {

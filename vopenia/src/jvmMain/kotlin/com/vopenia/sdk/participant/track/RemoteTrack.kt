@@ -1,11 +1,11 @@
 package com.vopenia.sdk.participant.track
 
+import com.vopenia.sdk.utils.Dispatchers
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 
 actual sealed class RemoteTrack : SubRemoteTrack(
     CoroutineScope(
-        Dispatchers.Main
+        Dispatchers.Default
     )
 ) {
     actual val track: RemoteTrackPublication = "NOTHING"

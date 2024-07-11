@@ -5,9 +5,8 @@ import com.vopenia.sdk.participant.local.LocalParticipant
 import com.vopenia.sdk.permissions.Permission
 import com.vopenia.sdk.permissions.PermissionRefused
 import com.vopenia.sdk.permissions.PermissionsController
+import com.vopenia.sdk.utils.Dispatchers
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
