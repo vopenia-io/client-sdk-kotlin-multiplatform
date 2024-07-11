@@ -54,6 +54,7 @@ kotlin {
         commonMain.dependencies {
             implementation(libs.kotlinx.coroutines)
             implementation(additionals.multiplatform.permissions)
+            implementation(project(":vopenia-utils"))
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

@@ -7,7 +7,7 @@ import com.vopenia.sdk.utils.Dispatchers
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 
-class FakeRemoteParticipant() : RemoteParticipant(
+class FakeRemoteParticipant : RemoteParticipant(
     scope = CoroutineScope(Dispatchers.Unconfined)
 ) {
     override val stateFlow = MutableStateFlow(

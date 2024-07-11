@@ -57,6 +57,8 @@ kotlin {
             api(additionals.multiplatform.viewmodel)
             api(additionals.multiplatform.file.access)
 
+            implementation(project(":vopenia-utils"))
+
             api(projects.vopenia)
             api(project(":vopenia-compose"))
         }
