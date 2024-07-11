@@ -1,7 +1,10 @@
 package io.vopenia.app.content.room
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.runtime.Composable
@@ -42,21 +45,37 @@ fun RoomScreen(
     }
 
     SafeArea {
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(columns),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            item(1) {
-                LocalParticipantCell(Modifier, room, localParticipant)
-            }
+        Column {
+            LazyVerticalGrid(
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                columns = GridCells.Fixed(columns),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                item(1) {
+                    LocalParticipantCell(Modifier, room, localParticipant)
+                }
 
-            items(cells.size) { index ->
-                cells[index].let {
-                    RemoteParticipantCell(Modifier, room, it.participant, it.videoTrack)
+                items(cells.size) { index ->
+                    cells[index].let {
+                        RemoteParticipantCell(
+                            Modifier.fillMaxWidth()
+                                .aspectRatio(1f),
+                            room,
+                            it.participant,
+                            it.videoTrack
+                        )
+                    }
                 }
             }
+
+            BottomActions(
+                modifier = Modifier.fillMaxWidth(),
+                onLeave = {
+                    app.leaveRoom()
+                }
+            )
         }
     }
 }
