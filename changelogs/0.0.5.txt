@@ -1,0 +1,2 @@
+- Add ability ot leave rooms
+- Design rooms
