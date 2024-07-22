@@ -1,0 +1,1 @@
+- now finally hide tiles when users leave or camera/screenshare switch off

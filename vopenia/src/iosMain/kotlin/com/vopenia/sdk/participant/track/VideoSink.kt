@@ -7,7 +7,7 @@ import kotlinx.cinterop.ExperimentalForeignApi
 actual interface VideoSink {
     val videoView: VideoView
 
-    fun attach(track: RemoteVideoTrack)
+    fun attach(track: IVideoTrack)
 
-    fun detach(track: RemoteVideoTrack)
+    fun detach(track: IVideoTrack)
 }

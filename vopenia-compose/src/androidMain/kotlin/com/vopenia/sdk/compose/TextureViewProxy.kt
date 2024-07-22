@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import com.vopenia.sdk.Room
 import com.vopenia.sdk.initVideoRenderer
+import com.vopenia.sdk.participant.track.IVideoTrack
 import com.vopenia.sdk.participant.track.RemoteVideoTrack
 import com.vopenia.sdk.utils.Log
 import io.livekit.android.renderer.TextureViewRenderer
@@ -27,11 +28,11 @@ fun TextureViewRendererWithProxy(
     modifier: Modifier = Modifier,
     room: Room,
     scaleType: ScaleType,
-    track: RemoteVideoTrack,
+    track: IVideoTrack,
     isMirror: Boolean,
 ) {
     var androidView: TextureViewRenderer? by remember { mutableStateOf(null) }
-    var previousTrack: RemoteVideoTrack? by remember { mutableStateOf(null) }
+    var previousTrack: IVideoTrack? by remember { mutableStateOf(null) }
 
     val state by track.state.collectAsState()
 

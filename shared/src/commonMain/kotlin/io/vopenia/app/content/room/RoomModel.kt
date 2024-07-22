@@ -1,34 +1,76 @@
 package io.vopenia.app.content.room
 
 import com.vopenia.sdk.Room
-import com.vopenia.sdk.compose.log
+import com.vopenia.sdk.participant.Participant
+import com.vopenia.sdk.participant.local.LocalParticipant
 import com.vopenia.sdk.participant.remote.RemoteParticipant
+import com.vopenia.sdk.participant.track.IVideoTrack
 import com.vopenia.sdk.participant.track.RemoteVideoTrack
+import com.vopenia.sdk.participant.track.Source
+import com.vopenia.sdk.participant.track.Track
+import com.vopenia.sdk.participant.track.local.LocalVideoTrack
+import com.vopenia.sdk.permissions.PermissionRefused
+import com.vopenia.sdk.permissions.PermissionUnrecoverable
+import com.vopenia.sdk.permissions.PermissionsController
+import com.vopenia.sdk.utils.Log
 import com.vopenia.sdk.utils.Queue
 import eu.codlab.viewmodel.StateViewModel
 import eu.codlab.viewmodel.launch
+import kotlinx.coroutines.launch
 
 data class RoomModelState(
-    val participantCells: List<ParticipantCell> = emptyList()
+    val localParticipantCells: List<LocalParticipantCell> = emptyList(),
+    val participantCells: List<RemoteParticipantCell> = emptyList()
 )
 
-class ParticipantCell(
+sealed class ParticipantCellHolder<T : IVideoTrack>(
+    var videoTrack: T? = null,
+    var sid: String? = null,
+    var source: Source,
+) {
+    override fun equals(other: Any?): Boolean {
+        if (other is ParticipantCellHolder<*>) {
+            return other.sid == sid && other.source == source
+        }
+
+        return super.equals(other)
+    }
+}
+
+class LocalParticipantCell(
+    videoTrack: LocalVideoTrack? = null,
+    sid: String? = null,
+    source: Source = Source.CAMERA
+) : ParticipantCellHolder<LocalVideoTrack>(videoTrack, sid, source)
+
+class RemoteParticipantCell(
     var participant: RemoteParticipant,
-    var videoTrack: RemoteVideoTrack? = null,
-    var sid: String? = null
-)
+    videoTrack: RemoteVideoTrack? = null,
+    sid: String? = null,
+    source: Source
+) : ParticipantCellHolder<RemoteVideoTrack>(videoTrack, sid, source)
 
 class RoomModel(
     private val room: Room
-) : StateViewModel<RoomModelState>(RoomModelState()) {
+) : StateViewModel<RoomModelState>(
+    RoomModelState(
+        localParticipantCells = listOf(LocalParticipantCell())
+    )
+) {
     private var knownParticipants: List<RemoteParticipant> = emptyList()
     private var knownTracks: List<RemoteVideoTrack> = emptyList()
+    private var knownLocalTracks: List<LocalVideoTrack> = emptyList()
+    private var microphoneChecker = TrackAvailabilityChecker(viewModelScope, Source.MICROPHONE)
+    private var videoChecker = TrackAvailabilityChecker(viewModelScope, Source.CAMERA)
     val queue = Queue()
+
+    val microphoneEnabledState = microphoneChecker.hasExpectedSource
+    val cameraEnabledState = videoChecker.hasExpectedSource
 
     init {
         launch(
             onError = {
-                log("RoomModel", "Error ${it.message}")
+                Log.d("RoomModel", "Error ${it.message}")
                 it.printStackTrace()
             }
         ) {
@@ -42,11 +84,41 @@ class RoomModel(
                 }
             }
         }
+
+        launch(
+            onError = {
+
+            }
+        ) {
+            room.localParticipant.videoTracks.collect { videoTracks ->
+                videoTracks.forEach { videoTrack ->
+                    videoChecker.checkAndStart(videoTrack)
+
+                    if (null == knownLocalTracks.find { it.sid == videoTrack.sid }) {
+                        knownLocalTracks = knownLocalTracks + videoTrack
+                        launchForLocalParticipantTrack(room.localParticipant, videoTrack)
+                    }
+                }
+            }
+        }
+
+        launch(
+            onError = {
+                // nothing here
+            }
+        ) {
+            room.localParticipant.audioTracks.collect { tracks ->
+                tracks.forEach { track ->
+                    Log.d("RoomModel", "collect an audio track")
+                    microphoneChecker.checkAndStart(track)
+                }
+            }
+        }
     }
 
     private suspend fun launchForParticipant(participant: RemoteParticipant) = launch(
         onError = {
-            log("RoomModel", "Error launchForParticipant ${it.message}")
+            Log.d("RoomModel", "Error launchForParticipant ${it.message}")
             it.printStackTrace()
         }
     ) {
@@ -56,8 +128,25 @@ class RoomModel(
             println("launchForParticipant -> not found -> adding to cells")
             updateState {
                 copy(
-                    participantCells = participantCells + ParticipantCell(participant)
+                    participantCells = participantCells + RemoteParticipantCell(
+                        participant,
+                        source = Source.CAMERA
+                    )
                 )
+            }
+        }
+
+        launch {
+            participant.state.collect {
+                if (it.connected) return@collect
+
+                updateState {
+                    copy(
+                        participantCells = participantCells.filter { cell ->
+                            cell.participant != participant
+                        }
+                    )
+                }
             }
         }
 
@@ -71,54 +160,124 @@ class RoomModel(
         }
     }
 
+    private suspend fun launchForLocalParticipantTrack(
+        participant: LocalParticipant,
+        givenVideoTrack: LocalVideoTrack
+    ) {
+        launchForParticipantTrack(
+            participant,
+            givenVideoTrack,
+            cellList = { states.value.localParticipantCells },
+            isEmpty = { it.sid == null },
+            isMatchingSid = { it.sid == givenVideoTrack.sid },
+            createCell = { _, videoTrack ->
+                LocalParticipantCell(
+                    videoTrack,
+                    sid = videoTrack.sid,
+                    source = videoTrack.source
+                )
+            },
+            copyState = {
+                copy(
+                    localParticipantCells = it
+                )
+            }
+        )
+    }
+
     private suspend fun launchForParticipantTrack(
-        participant: RemoteParticipant,
-        videoTrack: RemoteVideoTrack
+        givenParticipant: RemoteParticipant,
+        givenVideoTrack: RemoteVideoTrack
+    ) {
+        launchForParticipantTrack(
+            givenParticipant,
+            givenVideoTrack,
+            cellList = { states.value.participantCells },
+            isEmpty = { it.participant.identity == givenParticipant.identity && it.sid == null },
+            isMatchingSid = { it.participant.identity == givenParticipant.identity && it.sid == givenVideoTrack.sid },
+            createCell = { participant, videoTrack ->
+                RemoteParticipantCell(
+                    participant,
+                    videoTrack,
+                    sid = videoTrack.sid,
+                    source = videoTrack.source
+                )
+            },
+            copyState = {
+                copy(
+                    participantCells = it
+                )
+            }
+        )
+    }
+
+    private suspend fun <P : Participant<*, *, *, *>, V : Track, C : ParticipantCellHolder<*>> launchForParticipantTrack(
+        participant: P,
+        videoTrack: V,
+        cellList: () -> List<C>,
+        isEmpty: (C) -> Boolean,
+        isMatchingSid: (C) -> Boolean,
+        createCell: (P, V) -> C,
+        copyState: RoomModelState.(List<C>) -> RoomModelState
     ) {
         launch(
             onError = {
-                log("RoomModel", "Error launchForParticipantTrack ${it.message}")
+                Log.d("RoomModel", "Error launchForParticipantTrack ${it.message}")
                 it.printStackTrace()
             }
         ) {
             videoTrack.state.collect { newState ->
-                var originalTracks = states.value.participantCells
-                println("launchForParticipant -> on video track ${videoTrack.sid} -> $newState")
+                var originalTracks = cellList()
 
-                val empty = originalTracks.find {
-                    it.participant.identity == participant.identity && it.sid == null
-                }
+                val empty = originalTracks.find { isEmpty(it) }
 
-                val matching = originalTracks.find {
-                    it.participant.identity == participant.identity && it.sid == videoTrack.sid
-                }
+                val matching = originalTracks.find { isMatchingSid(it) }
+
+                Log.d("RoomModel", "newState $newState")
 
                 if (null != matching) {
-                    println("launchForParticipant -> this video track is known")
+                    // if the track is unpublished && is not a camera
+                    if (matching.source == Source.SCREEN_SHARE) {
+                        if (!newState.published || newState.muted ) {
+                            originalTracks = originalTracks - matching
+                        }
+                    }
+                } else if (!newState.published) {
+                    // we didn't find a cell but the participant is not publishing so we skip
                 } else if (null != empty) {
                     originalTracks = originalTracks - empty
 
-                    println("launchForParticipant -> this video track is not known but we can squeeze it")
-                    originalTracks = originalTracks + ParticipantCell(
-                        participant,
-                        videoTrack,
-                        sid = videoTrack.sid
-                    )
+                    originalTracks = originalTracks + createCell(participant, videoTrack)
                 } else {
-                    println("launchForParticipant -> this video track is not known, we append it")
-                    originalTracks = originalTracks + ParticipantCell(
-                        participant,
-                        videoTrack,
-                        sid = videoTrack.sid
-                    )
+                    originalTracks = originalTracks + createCell(participant, videoTrack)
                 }
 
                 updateState {
-                    copy(
-                        participantCells = originalTracks
-                    )
+                    copyState(originalTracks)
                 }
             }
+        }
+    }
+
+    fun enableMicrophone(enable: Boolean) = launch {
+        try {
+            room.localParticipant.enableMicrophone(enable)
+        } catch (err: PermissionRefused) {
+            // refused -> show popup
+        } catch (err: PermissionUnrecoverable) {
+            // todo : app setting
+            PermissionsController.openAppSettings()
+        }
+    }
+
+    fun enableCamera(enable: Boolean) = launch {
+        try {
+            room.localParticipant.enableCamera(enable)
+        } catch (err: PermissionRefused) {
+            // refused -> show popup
+        } catch (err: PermissionUnrecoverable) {
+            // todo : app setting
+            PermissionsController.openAppSettings()
         }
     }
 }

@@ -24,17 +24,23 @@ class InternalRemoteParticipant(
     scope: CoroutineScope,
     private val remoteParticipant: RP,
     connected: Boolean
-) : RemoteParticipant(scope) {
-    override val stateFlow = MutableStateFlow(
-        RemoteParticipantState(
-            connected = connected,
-            name = remoteParticipant.name,
-            metadata = remoteParticipant.metadata,
-            permissions = remoteParticipant.permissions?.let {
-                InternalParticipantPermissions(it).toMultiplatform()
-            } ?: ParticipantPermissions()
-        )
+) : RemoteParticipant(scope,
+    RemoteParticipantState(
+        connected = connected,
+        name = remoteParticipant.name,
+        metadata = remoteParticipant.metadata,
+        permissions = remoteParticipant.permissions?.let {
+            InternalParticipantPermissions(it).toMultiplatform()
+        } ?: ParticipantPermissions()
     )
+) {
+    override fun filterListAudio(tracks: List<RemoteTrack>): List<RemoteAudioTrack> {
+        return tracks.filterIsInstance<RemoteAudioTrack>()
+    }
+
+    override fun filterListVideo(tracks: List<RemoteTrack>): List<RemoteVideoTrack> {
+        return tracks.filterIsInstance<RemoteVideoTrack>()
+    }
 
     private var collection: Job? = null
 
@@ -117,7 +123,10 @@ class InternalRemoteParticipant(
                     }
 
                     is ParticipantEvent.TrackMuted -> {
-                        // TODO
+                        val (wrapper, new) = getOrCreate(it.publication as RemoteTrackPublication)
+
+                        wrapper.setMuted(true)
+                        if (new) append(wrapper)
                     }
 
                     is ParticipantEvent.TrackPublished -> {
@@ -156,7 +165,10 @@ class InternalRemoteParticipant(
                     }
 
                     is ParticipantEvent.TrackUnmuted -> {
-                        // TODO
+                        val (wrapper, new) = getOrCreate(it.publication as RemoteTrackPublication)
+
+                        wrapper.setMuted(false)
+                        if (new) append(wrapper)
                     }
 
                     is ParticipantEvent.TrackUnpublished -> {
@@ -184,7 +196,7 @@ class InternalRemoteParticipant(
     ): Pair<RemoteTrack, Boolean> {
         Log.d("REMOTE", "getOrCreate for ${track.sid}")
 
-        return remoteTracks.value.find { it.sid == track.sid }.let {
+        return internalTracks.value.find { it.sid == track.sid }.let {
             if (null != it) {
                 it.updateInternalTrack(track)
                 it to false

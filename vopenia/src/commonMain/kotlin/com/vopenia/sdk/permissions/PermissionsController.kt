@@ -18,4 +18,18 @@ object PermissionsController {
     fun canOpenAppSettings() = controller.canOpenAppSettings()
 
     fun openAppSettings() = controller.openAppSettings()
+
+    suspend fun checkOrProvide(permission: Permission) {
+        if (!isGranted(permission)) {
+            try {
+                providePermission(permission)
+            } catch (err: Throwable) {
+                throw PermissionUnrecoverable(permission)
+            }
+        }
+
+        if (!isGranted(permission)) {
+            throw PermissionRefused(permission)
+        }
+    }
 }

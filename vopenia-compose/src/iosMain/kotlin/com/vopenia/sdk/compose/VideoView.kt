@@ -11,6 +11,7 @@ import androidx.compose.ui.interop.UIKitView
 import com.vopenia.sdk.Room
 import com.vopenia.sdk.VideoViewFactory
 import com.vopenia.sdk.VideoViewWrapper
+import com.vopenia.sdk.participant.track.IVideoTrack
 import com.vopenia.sdk.participant.track.RemoteVideoTrack
 import kotlinx.cinterop.ExperimentalForeignApi
 
@@ -19,11 +20,11 @@ import kotlinx.cinterop.ExperimentalForeignApi
 actual fun VideoView(
     modifier: Modifier,
     room: Room,
-    track: RemoteVideoTrack,
+    track: IVideoTrack,
     scaleType: ScaleType,
     isMirror: Boolean,
 ) {
-    var previousTrack: RemoteVideoTrack? by remember { mutableStateOf(null) }
+    var previousTrack: IVideoTrack? by remember { mutableStateOf(null) }
     var rememberedWrapper: VideoViewWrapper? by remember { mutableStateOf(null) }
 
     val layoutMode: Long = when (scaleType) {

@@ -23,19 +23,25 @@ class InternalRemoteParticipant(
     scope: CoroutineScope,
     private val remoteParticipant: RP,
     connected: Boolean
-) : RemoteParticipant(scope) {
+) : RemoteParticipant(
+    scope, RemoteParticipantState(
+        connected = connected,
+        name = remoteParticipant.name(),
+        metadata = remoteParticipant.metadata(),
+        permissions = InternalParticipantPermissions(
+            remoteParticipant.permissions()
+        ).toMultiplatform()
+    )
+) {
     private var isAttached = false
 
-    override val stateFlow = MutableStateFlow(
-        RemoteParticipantState(
-            connected = connected,
-            name = remoteParticipant.name(),
-            metadata = remoteParticipant.metadata(),
-            permissions = InternalParticipantPermissions(
-                remoteParticipant.permissions()
-            ).toMultiplatform()
-        )
-    )
+    override fun filterListAudio(tracks: List<RemoteTrack>): List<RemoteAudioTrack> {
+        return tracks.filterIsInstance<RemoteAudioTrack>()
+    }
+
+    override fun filterListVideo(tracks: List<RemoteTrack>): List<RemoteVideoTrack> {
+        return tracks.filterIsInstance<RemoteVideoTrack>()
+    }
 
     override val identity = remoteParticipant.identity()?.stringValue()
 
@@ -90,6 +96,10 @@ class InternalRemoteParticipant(
             },
             onTrackPublicationIsMuted = { track, isMuted ->
                 println("onTrackPublicationIsMuted $track")
+                val (wrapper, new) = getOrCreate(track as RemoteTrackPublication)
+
+                wrapper.setMuted(isMuted)
+                if (new) append(wrapper)
             },
             onTrackSubscribed = { track ->
                 val (wrapper, new) = getOrCreate(track)
@@ -138,7 +148,7 @@ class InternalRemoteParticipant(
     }
 
     private fun getOrCreate(track: RemoteTrackPublication): Pair<RemoteTrack, Boolean> =
-        remoteTracks.value.find { it.sid == track.sid().stringValue() }.let {
+        internalTracks.value.find { it.sid == track.sid().stringValue() }.let {
             if (null != it) {
                 it to false
             } else {

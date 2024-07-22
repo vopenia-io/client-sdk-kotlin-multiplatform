@@ -1,3 +1,7 @@
 package com.vopenia.sdk.participant.track
 
-actual typealias RemoteTrackPublication = String
+data class InternalRemoteTrackPublication(
+    val value: String
+)
+
+actual typealias RemoteTrackPublication = InternalRemoteTrackPublication

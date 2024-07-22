@@ -3,22 +3,23 @@ package com.vopenia.sdk.participant.track
 import com.vopenia.sdk.utils.Dispatchers
 import kotlinx.coroutines.CoroutineScope
 
-actual sealed class RemoteTrack : SubRemoteTrack(
+actual sealed class RemoteTrack : Track(
     CoroutineScope(
         Dispatchers.Default
-    )
+    ),
+    TrackState()
 ) {
-    actual val track: RemoteTrackPublication = "NOTHING"
+    actual val track = InternalRemoteTrackPublication("NOTHING")
 
-    actual val name = "NOTHING"
+    actual override val name = "NOTHING"
 
     actual val isEnabled = false
 
     actual val isSubscriptionAllowed = false
 
-    actual val kind = Kind.None
+    actual override val kind = Kind.None
 
-    actual val sid = ""
+    actual override val sid = ""
 
     actual suspend fun enable(enable: Boolean) {
         TODO("NotImplemented")
@@ -31,4 +32,6 @@ actual sealed class RemoteTrack : SubRemoteTrack(
     internal actual fun updateInternalTrack(track: RemoteTrackPublication) {
         // nothing
     }
+
+    override actual val source = Source.UNKNOWN
 }

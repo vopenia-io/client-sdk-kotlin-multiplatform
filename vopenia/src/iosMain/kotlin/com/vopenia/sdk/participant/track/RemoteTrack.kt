@@ -1,6 +1,7 @@
 package com.vopenia.sdk.participant.track
 
 import LiveKitClient.TrackKind
+import LiveKitClient.TrackSource
 import com.vopenia.sdk.NSErrorException
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.CoroutineScope
@@ -12,19 +13,21 @@ import kotlin.coroutines.suspendCoroutine
 actual sealed class RemoteTrack(
     scope: CoroutineScope,
     track: RemoteTrackPublication
-) : SubRemoteTrack(scope) {
+) : Track(scope, trackStateFromPublication(track)) {
     private var internalTrack = track
 
     actual val track: RemoteTrackPublication
         get() = internalTrack
 
-    actual val name = track.name()
+    actual override val name = track.name()
 
     actual val isEnabled = track.isEnabled()
 
     actual val isSubscriptionAllowed = track.isSubscriptionAllowed()
-    actual val kind = kindFrom(track.kind())
-    actual val sid = track.sid().stringValue()
+    actual override val kind = kindFrom(track.kind())
+    actual override val sid = track.sid().stringValue()
+
+    actual override val source: Source = sourceFrom(track.source())
 
     actual suspend fun enable(enable: Boolean) {
         suspendCoroutine { continuation ->
@@ -59,4 +62,13 @@ fun kindFrom(value: TrackKind) = when (value) {
     0L -> Kind.Audio
     1L -> Kind.Video
     else -> Kind.None
+}
+
+fun sourceFrom(value: TrackSource) = when(value) {
+    0L -> Source.UNKNOWN // case unknown
+    1L -> Source.CAMERA // case camera
+    2L -> Source.MICROPHONE //case microphone
+    3L -> Source.SCREEN_SHARE // case screenShareVideo
+    4L -> Source.SCREEN_SHARE // case screenShareAudio
+    else -> Source.UNKNOWN
 }

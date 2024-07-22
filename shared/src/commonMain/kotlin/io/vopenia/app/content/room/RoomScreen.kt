@@ -12,6 +12,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.vopenia.sdk.utils.Log
 import eu.codlab.compose.widgets.LocalWindow
 import eu.codlab.compose.widgets.StatusBarAndNavigation
 import eu.codlab.compose.widgets.screen.WindowType
@@ -32,10 +33,14 @@ fun RoomScreen(
 
     val model = rememberViewModel { RoomModel(room) }
     val participantCellsState by model.states.collectAsState()
-    val cells = participantCellsState.participantCells
+    val localCells = participantCellsState.localParticipantCells
+    val remoteCells = participantCellsState.participantCells
 
     val localParticipant = room.localParticipant
-    println("on recomposition...")
+    val microphoneIsUsed by model.microphoneEnabledState.collectAsState()
+    val cameraIsUsed by model.cameraEnabledState.collectAsState()
+    val audioTracks by localParticipant.audioTracks.collectAsState()
+    val videoTracks by localParticipant.videoTracks.collectAsState()
 
     @Suppress("MagicNumber")
     val columns = when (LocalWindow.current) {
@@ -53,13 +58,25 @@ fun RoomScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                item(1) {
+                /*item(1) {
                     LocalParticipantCell(Modifier, room, localParticipant)
+                }*/
+
+                items(localCells.size) { index ->
+                    localCells[index].let {
+                        ParticipantCell(
+                            Modifier.fillMaxWidth()
+                                .aspectRatio(1f),
+                            room,
+                            room.localParticipant,
+                            it.videoTrack
+                        )
+                    }
                 }
 
-                items(cells.size) { index ->
-                    cells[index].let {
-                        RemoteParticipantCell(
+                items(remoteCells.size) { index ->
+                    remoteCells[index].let {
+                        ParticipantCell(
                             Modifier.fillMaxWidth()
                                 .aspectRatio(1f),
                             room,
@@ -72,6 +89,16 @@ fun RoomScreen(
 
             BottomActions(
                 modifier = Modifier.fillMaxWidth(),
+                isMicActivated = microphoneIsUsed,
+                isVideoActivated = cameraIsUsed,
+                onVideoClick = {
+                    Log.d("RoomScreen", "onVideoClick -> ${!cameraIsUsed}")
+                    model.enableCamera(!cameraIsUsed)
+                },
+                onMicrophoneClick = {
+                    Log.d("RoomScreen", "onMicrophoneClick -> ${!microphoneIsUsed}")
+                    model.enableMicrophone(!microphoneIsUsed)
+                },
                 onLeave = {
                     app.leaveRoom()
                 }

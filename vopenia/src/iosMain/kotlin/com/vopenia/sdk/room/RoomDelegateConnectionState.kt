@@ -47,13 +47,21 @@ class RoomDelegateConnectionState(
     @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
     @ObjCSignatureOverride
     override fun room(room: Room, didDisconnectWithError: LiveKitError?) {
-        onConnectionState(CS.ConnectionError(NSErrorException(didDisconnectWithError!!)))
+        if (null != didDisconnectWithError) {
+            onConnectionState(CS.ConnectionError(NSErrorException(didDisconnectWithError)))
+        } else {
+            onConnectionState(CS.Disconnected)
+        }
     }
 
     @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
     @ObjCSignatureOverride
     override fun room(room: Room, didFailToConnectWithError: LiveKitError?) {
-        onConnectionState(CS.ConnectionError(NSErrorException(didFailToConnectWithError!!)))
+        if (null != didFailToConnectWithError) {
+            onConnectionState(CS.ConnectionError(NSErrorException(didFailToConnectWithError)))
+        } else {
+            // -> ? onConnectionState(CS.Disconnected)
+        }
     }
 
     @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")

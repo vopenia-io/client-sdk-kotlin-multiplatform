@@ -4,13 +4,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.vopenia.sdk.Room
-import com.vopenia.sdk.participant.track.RemoteVideoTrack
+import com.vopenia.sdk.participant.track.IVideoTrack
 
 @Composable
 actual fun VideoView(
     modifier: Modifier,
     room: Room,
-    track: RemoteVideoTrack,
+    track: IVideoTrack,
     scaleType: ScaleType,
     isMirror: Boolean,
 ) {

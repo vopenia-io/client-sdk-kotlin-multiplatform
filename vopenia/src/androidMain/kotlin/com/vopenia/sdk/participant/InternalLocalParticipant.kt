@@ -2,20 +2,29 @@ package com.vopenia.sdk.participant
 
 import com.vopenia.sdk.participant.local.LocalParticipant
 import com.vopenia.sdk.participant.local.LocalParticipantState
+import com.vopenia.sdk.participant.track.Kind
+import com.vopenia.sdk.participant.track.kindFrom
+import com.vopenia.sdk.participant.track.local.LocalAudioTrack
+import com.vopenia.sdk.participant.track.local.LocalNoneTrack
+import com.vopenia.sdk.participant.track.local.LocalTrack
+import com.vopenia.sdk.participant.track.local.LocalTrackPublication
+import com.vopenia.sdk.participant.track.local.LocalVideoTrack
+import com.vopenia.sdk.permissions.Permission
+import com.vopenia.sdk.permissions.PermissionsController
+import com.vopenia.sdk.utils.Log
 import io.livekit.android.events.ParticipantEvent
 import io.livekit.android.events.collect
+import io.livekit.android.room.track.RemoteTrackPublication
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import io.livekit.android.room.participant.LocalParticipant as LP
 
 class InternalLocalParticipant(
-    private val scope: CoroutineScope,
+    scope: CoroutineScope,
     private val localParticipant: LP
-) : LocalParticipant {
-    private val stateFlow: MutableStateFlow<LocalParticipantState> = MutableStateFlow(
+) : LocalParticipant(scope) {
+    override val stateFlow: MutableStateFlow<LocalParticipantState> = MutableStateFlow(
         LocalParticipantState(
             permissions = localParticipant.permissions?.let {
                 InternalParticipantPermissions(it).toMultiplatform()
@@ -24,8 +33,6 @@ class InternalLocalParticipant(
     )
 
     override val identity = localParticipant.identity?.value
-
-    private val isSpeakingFlow: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
     init {
         scope.launch {
@@ -36,11 +43,17 @@ class InternalLocalParticipant(
                     }
 
                     is ParticipantEvent.LocalTrackPublished -> {
-                        // TODO
+                        val (wrapper, new) = getOrCreate(it.publication)
+
+                        wrapper.setPublished(true)
+                        if (new) append(wrapper)
                     }
 
                     is ParticipantEvent.LocalTrackUnpublished -> {
-                        // TODO
+                        val (wrapper, new) = getOrCreate(it.publication)
+
+                        wrapper.setPublished(false)
+                        if (new) append(wrapper)
                     }
 
                     is ParticipantEvent.MetadataChanged -> {
@@ -68,7 +81,11 @@ class InternalLocalParticipant(
                     }
 
                     is ParticipantEvent.TrackMuted -> {
-                        // TODO
+                        Log.d("LocalParticipant", "track is muted")
+                        val (wrapper, new) = getOrCreate(it.publication as LocalTrackPublication)
+
+                        wrapper.setMuted(true)
+                        if (new) append(wrapper)
                     }
 
                     is ParticipantEvent.TrackPublished -> {
@@ -92,7 +109,10 @@ class InternalLocalParticipant(
                     }
 
                     is ParticipantEvent.TrackUnmuted -> {
-                        // TODO
+                        val (wrapper, new) = getOrCreate(it.publication as LocalTrackPublication)
+
+                        wrapper.setMuted(false)
+                        if (new) append(wrapper)
                     }
 
                     is ParticipantEvent.TrackUnpublished -> {
@@ -107,13 +127,42 @@ class InternalLocalParticipant(
         }
     }
 
-    override val state: StateFlow<LocalParticipantState>
-        get() = stateFlow.asStateFlow()
-
-    override val isSpeakingState: StateFlow<Boolean>
-        get() = isSpeakingFlow.asStateFlow()
-
     override suspend fun enableMicrophone(enabled: Boolean) {
+        PermissionsController.checkOrProvide(Permission.RECORD_AUDIO)
+        Log.d("LocalParticipant", "enableMicrophone($enabled)")
         localParticipant.setMicrophoneEnabled(enabled)
+    }
+
+    override suspend fun enableCamera(enabled: Boolean) {
+        PermissionsController.checkOrProvide(Permission.CAMERA)
+
+        localParticipant.setCameraEnabled(enabled)
+    }
+
+    override fun filterListAudio(tracks: List<LocalTrack>): List<LocalAudioTrack> {
+        return tracks.filterIsInstance<LocalAudioTrack>()
+    }
+
+    override fun filterListVideo(tracks: List<LocalTrack>): List<LocalVideoTrack> {
+        return tracks.filterIsInstance<LocalVideoTrack>()
+    }
+
+    private fun getOrCreate(
+        track: LocalTrackPublication
+    ): Pair<LocalTrack, Boolean> {
+        Log.d("LOCAL", "getOrCreate for ${track.sid}")
+
+        return internalTracks.value.find { it.sid == track.sid }.let {
+            if (null != it) {
+                it.updateInternalTrack(track)
+                it to false
+            } else {
+                when (kindFrom(track.kind)) {
+                    Kind.Audio -> LocalAudioTrack(scope, track)
+                    Kind.Video -> LocalVideoTrack(scope, track)
+                    Kind.None -> LocalNoneTrack(scope, track)
+                } to true
+            }
+        }
     }
 }

@@ -7,8 +7,8 @@ import kotlinx.coroutines.CoroutineScope
 actual class RemoteVideoTrack(
     scope: CoroutineScope,
     track: RemoteTrackPublication
-) : RemoteTrack(scope, track) {
-    actual fun addRenderer(videoSink: VideoSink) {
+) : RemoteTrack(scope, track), IVideoTrack {
+    actual override fun addRenderer(videoSink: VideoSink) {
         println("VideoView -> addRenderer called ${track.track}")
         track.track?.let {
             if (it is VideoTrack) {
@@ -17,7 +17,7 @@ actual class RemoteVideoTrack(
         }
     }
 
-    actual fun removeRenderer(videoSink: VideoSink) {
+    actual override fun removeRenderer(videoSink: VideoSink) {
         track.track?.let {
             if (it is VideoTrack) {
                 it.removeRenderer(videoSink)

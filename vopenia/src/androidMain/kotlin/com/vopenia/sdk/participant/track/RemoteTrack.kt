@@ -6,16 +6,18 @@ import kotlinx.coroutines.CoroutineScope
 actual sealed class RemoteTrack(
     scope: CoroutineScope,
     track: RemoteTrackPublication
-) : SubRemoteTrack(scope) {
+) : com.vopenia.sdk.participant.track.Track(scope, trackStateFromPublication(track)) {
     private var internalTrack: RemoteTrackPublication = track
 
     actual val track: RemoteTrackPublication
         get() = internalTrack
 
-    actual val kind = kindFrom(track.kind)
-    actual val sid = track.sid
+    actual override val kind = kindFrom(track.kind)
+    actual override val sid = track.sid
 
-    actual val name = track.name
+    actual override val name = track.name
+
+    actual override val source = track.source.toSource()
 
     actual val isEnabled = track.isAutoManaged // ?
 

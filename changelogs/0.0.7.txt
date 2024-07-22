@@ -1,0 +1,1 @@
+- added support for starting / stopping microphone & camera for the local participant

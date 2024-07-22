@@ -1,17 +1,19 @@
 package com.vopenia.sdk.participant.track
 
-expect sealed class RemoteTrack : SubRemoteTrack {
+expect sealed class RemoteTrack : Track {
     internal val track: RemoteTrackPublication
 
-    val name: String
+    override val name: String
+
+    override val source: Source
 
     val isEnabled: Boolean
 
     val isSubscriptionAllowed: Boolean
 
-    val kind: Kind
+    override val kind: Kind
 
-    val sid: String
+    override val sid: String
 
     suspend fun enable(enable: Boolean)
 

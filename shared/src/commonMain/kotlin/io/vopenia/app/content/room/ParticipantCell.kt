@@ -18,13 +18,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.unit.dp
 import com.vopenia.sdk.Room
 import com.vopenia.sdk.compose.ScaleType
 import com.vopenia.sdk.compose.VideoView
-import com.vopenia.sdk.participant.remote.RemoteParticipant
-import com.vopenia.sdk.participant.track.RemoteVideoTrack
+import com.vopenia.sdk.participant.Participant
+import com.vopenia.sdk.participant.track.IVideoTrack
 import eu.codlab.compose.theme.LocalDarkTheme
 import eu.codlab.compose.widgets.TextNormal
 import io.vopenia.app.LocalFontSizes
@@ -33,11 +34,11 @@ import io.vopenia.app.theme.AppColor
 import io.vopenia.app.utils.FakeRemoteParticipant
 
 @Composable
-fun RemoteParticipantCell(
+fun ParticipantCell(
     modifier: Modifier,
     room: Room,
-    participant: RemoteParticipant,
-    videoTrack: RemoteVideoTrack? = null
+    participant: Participant<*, *, *, *>,
+    videoTrack: IVideoTrack? = null
 ) {
     val avatarTint = if (LocalDarkTheme.current) {
         AppColor.Gray
@@ -52,19 +53,14 @@ fun RemoteParticipantCell(
             contentAlignment = Alignment.BottomStart
         ) {
             if (null != videoTrack) {
-                VideoView(
-                    modifier = Modifier.fillMaxSize(),
-                    room = room,
-                    track = videoTrack,
-                    scaleType = ScaleType.Fill
+                RenderVideoTrack(
+                    Modifier.fillMaxSize(),
+                    avatarTint,
+                    room,
+                    videoTrack
                 )
             } else {
-                Image(
-                    modifier = Modifier.fillMaxSize(),
-                    imageVector = Icons.Default.Person,
-                    contentDescription = null,
-                    colorFilter = ColorFilter.tint(avatarTint)
-                )
+                RenderAvatar(Modifier.fillMaxSize(), avatarTint)
             }
 
             RenderUserName(
@@ -75,9 +71,40 @@ fun RemoteParticipantCell(
 }
 
 @Composable
+private fun RenderVideoTrack(
+    modifier: Modifier,
+    avatarTint: Color,
+    room: Room,
+    videoTrack: IVideoTrack
+) {
+    val trackState by videoTrack.state.collectAsState()
+
+    if (trackState.published && !trackState.muted && trackState.active) {
+        VideoView(
+            modifier = modifier,
+            room = room,
+            track = videoTrack,
+            scaleType = ScaleType.Fill
+        )
+    } else {
+        RenderAvatar(modifier, avatarTint)
+    }
+}
+
+@Composable
+private fun RenderAvatar(modifier: Modifier, avatarTint: Color) {
+    Image(
+        modifier = modifier,
+        imageVector = Icons.Default.Person,
+        contentDescription = null,
+        colorFilter = ColorFilter.tint(avatarTint)
+    )
+}
+
+@Composable
 fun RenderUserName(
     modifier: Modifier = Modifier,
-    participant: RemoteParticipant
+    participant: Participant<*, *, *, *>
 ) {
     val state by participant.state.collectAsState()
 
@@ -104,9 +131,9 @@ fun RenderUserName(
 
 @Preview
 @Composable
-private fun RemoteParticipantCellPreview() {
+private fun ParticipantCellPreview() {
     PreviewWrapperLightColumn { modifier, _ ->
-        RemoteParticipantCell(
+        ParticipantCell(
             modifier = modifier.fillMaxSize(),
             room = Room(),
             participant = FakeRemoteParticipant(),
