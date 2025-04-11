@@ -1,7 +1,6 @@
 package com.vopenia.sdk.participant.track.local
 
 import LiveKitClient.LocalVideoTrack
-import LiveKitClient.RemoteVideoTrack
 import com.vopenia.sdk.participant.track.IVideoTrack
 import com.vopenia.sdk.participant.track.VideoSink
 import kotlinx.cinterop.ExperimentalForeignApi

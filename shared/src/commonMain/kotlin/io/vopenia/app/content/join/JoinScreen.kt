@@ -1,6 +1,5 @@
 package io.vopenia.app.content.join
 
-import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,13 +24,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.vopenia.app.res.Res
 import com.vopenia.app.res.join_background
+import de.drick.compose.hotpreview.HotPreview
 import eu.codlab.compose.theme.LocalDarkTheme
 import eu.codlab.compose.widgets.TextNormal
 import eu.codlab.safearea.views.SafeArea
 import eu.codlab.viewmodel.rememberViewModel
 import io.vopenia.app.LocalApp
 import io.vopenia.app.LocalFontSizes
-import io.vopenia.app.preview.PreviewWrapperLightColumn
+import io.vopenia.app.PreviewApp
 import org.jetbrains.compose.resources.painterResource
 
 @Suppress("LongMethod")
@@ -145,10 +145,11 @@ private fun Copyright() {
     }
 }
 
+@HotPreview(widthDp = 400, heightDp = 600, darkMode = true)
+@HotPreview(widthDp = 400, heightDp = 600, darkMode = false)
 @Composable
-@Preview
 private fun JoinScreenPreview() {
-    PreviewWrapperLightColumn { modifier, isDark ->
-        JoinScreen(modifier.fillMaxSize())
+    PreviewApp {
+        JoinScreen(Modifier.fillMaxSize())
     }
 }

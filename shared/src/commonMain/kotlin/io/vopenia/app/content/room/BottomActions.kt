@@ -1,6 +1,5 @@
 package io.vopenia.app.content.room
 
-import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,8 +18,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.unit.dp
+import de.drick.compose.hotpreview.HotPreview
 import eu.codlab.compose.theme.LocalDarkTheme
-import io.vopenia.app.preview.PreviewWrapperLightColumn
+import io.vopenia.app.PreviewApp
 import io.vopenia.app.theme.AppColor
 import io.vopenia.app.utils.components.ButtonIcon
 import io.vopenia.app.utils.components.CardButton
@@ -91,11 +91,12 @@ fun BottomActions(
     }
 }
 
-@Preview
+@HotPreview(widthDp = 300, heightDp = 250, darkMode = true)
+@HotPreview(widthDp = 300, heightDp = 250, darkMode = false)
 @Composable
 private fun BottomActionsPreview() {
-    PreviewWrapperLightColumn { modifier, _ ->
-        Column(modifier) {
+    PreviewApp {
+        Column(Modifier) {
             listOf(
                 true to true,
                 true to false,

@@ -8,7 +8,6 @@ import kotlinx.coroutines.CoroutineScope
 
 abstract class LocalParticipant(scope: CoroutineScope) :
     Participant<LocalTrack, LocalParticipantState, LocalAudioTrack, LocalVideoTrack>(scope) {
-
     abstract suspend fun enableMicrophone(enabled: Boolean)
 
     abstract suspend fun enableCamera(enabled: Boolean)

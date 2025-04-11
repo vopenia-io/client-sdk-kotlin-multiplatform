@@ -12,13 +12,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.vopenia.sdk.Room
 import com.vopenia.sdk.utils.Log
-import eu.codlab.compose.widgets.LocalWindow
 import eu.codlab.compose.widgets.StatusBarAndNavigation
-import eu.codlab.compose.widgets.screen.WindowType
 import eu.codlab.safearea.views.SafeArea
 import eu.codlab.viewmodel.rememberViewModel
+import io.vopenia.app.AppModel
 import io.vopenia.app.LocalApp
+import io.vopenia.app.theme.WindowType
+import io.vopenia.app.window.LocalFrame
 
 @Composable
 fun RoomScreen(
@@ -36,18 +38,7 @@ fun RoomScreen(
     val localCells = participantCellsState.localParticipantCells
     val remoteCells = participantCellsState.participantCells
 
-    val localParticipant = room.localParticipant
-    val microphoneIsUsed by model.microphoneEnabledState.collectAsState()
-    val cameraIsUsed by model.cameraEnabledState.collectAsState()
-    val audioTracks by localParticipant.audioTracks.collectAsState()
-    val videoTracks by localParticipant.videoTracks.collectAsState()
-
-    @Suppress("MagicNumber")
-    val columns = when (LocalWindow.current) {
-        WindowType.SMARTPHONE_TINY -> 1
-        WindowType.SMARTPHONE -> 1
-        WindowType.TABLET -> 3
-    }
+    val columns = columns()
 
     SafeArea {
         Column {
@@ -87,22 +78,49 @@ fun RoomScreen(
                 }
             }
 
-            BottomActions(
-                modifier = Modifier.fillMaxWidth(),
-                isMicActivated = microphoneIsUsed,
-                isVideoActivated = cameraIsUsed,
-                onVideoClick = {
-                    Log.d("RoomScreen", "onVideoClick -> ${!cameraIsUsed}")
-                    model.enableCamera(!cameraIsUsed)
-                },
-                onMicrophoneClick = {
-                    Log.d("RoomScreen", "onMicrophoneClick -> ${!microphoneIsUsed}")
-                    model.enableMicrophone(!microphoneIsUsed)
-                },
-                onLeave = {
-                    app.leaveRoom()
-                }
+            RoomScreenBottomActions(
+                Modifier.fillMaxWidth(),
+                app,
+                room
             )
         }
     }
+}
+
+@Composable
+fun RoomScreenBottomActions(
+    modifier: Modifier = Modifier,
+    app: AppModel,
+    room: Room,
+) {
+    val model = rememberViewModel { RoomModel(room) }
+
+    val microphoneIsUsed by model.microphoneEnabledState.collectAsState()
+    val cameraIsUsed by model.cameraEnabledState.collectAsState()
+
+    BottomActions(
+        modifier = modifier,
+        isMicActivated = microphoneIsUsed,
+        isVideoActivated = cameraIsUsed,
+        onVideoClick = {
+            Log.d("RoomScreen", "onVideoClick -> ${!cameraIsUsed}")
+            model.enableCamera(!cameraIsUsed)
+        },
+        onMicrophoneClick = {
+            Log.d("RoomScreen", "onMicrophoneClick -> ${!microphoneIsUsed}")
+            model.enableMicrophone(!microphoneIsUsed)
+        },
+        onLeave = {
+            app.leaveRoom()
+        }
+    )
+}
+
+@Suppress("MagicNumber")
+@Composable
+private fun columns() = when (LocalFrame.current) {
+    WindowType.SMARTPHONE_TINY -> 1
+    WindowType.SMARTPHONE -> 1
+    WindowType.PHABLET -> 3
+    WindowType.TABLET -> 3
 }

@@ -64,10 +64,11 @@ fun kindFrom(value: TrackKind) = when (value) {
     else -> Kind.None
 }
 
-fun sourceFrom(value: TrackSource) = when(value) {
+@Suppress("MagicNumber")
+fun sourceFrom(value: TrackSource) = when (value) {
     0L -> Source.UNKNOWN // case unknown
     1L -> Source.CAMERA // case camera
-    2L -> Source.MICROPHONE //case microphone
+    2L -> Source.MICROPHONE // case microphone
     3L -> Source.SCREEN_SHARE // case screenShareVideo
     4L -> Source.SCREEN_SHARE // case screenShareAudio
     else -> Source.UNKNOWN

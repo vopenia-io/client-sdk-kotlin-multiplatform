@@ -1,5 +1,6 @@
 package io.vopenia.app
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -20,6 +21,7 @@ import io.vopenia.app.theme.ApplicationTheme
 import io.vopenia.app.theme.FontSizes
 import io.vopenia.app.theme.createFontSizes
 import io.vopenia.app.theme.modifier.defaultBackground
+import io.vopenia.app.window.LocalFrameProvider
 
 val staticModel: AppModelImpl = AppModelImpl()
 
@@ -59,7 +61,7 @@ fun App(
 @Composable
 fun PreviewApp(
     modifier: Modifier = Modifier,
-    isDarkTheme: Boolean,
+    isDarkTheme: Boolean = isSystemInDarkTheme(),
     onBackPressed: AppBackPressProvider = AppBackPressProvider(),
     content: @Composable () -> Unit
 ) {
@@ -99,13 +101,15 @@ private fun InternalApp(
     CompositionLocalProvider(
         LocalConfirmPopup provides confirmPopup,
         LocalApp provides model,
-        LocalFontSizes provides fontSizes
+        LocalFontSizes provides fontSizes,
     ) {
         ApplicationTheme(
             darkTheme = isDarkTheme
         ) {
             CompositionScreenProvider(modifier) {
-                content()
+                LocalFrameProvider {
+                    content()
+                }
             }
         }
     }

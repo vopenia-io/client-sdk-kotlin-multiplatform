@@ -8,6 +8,7 @@ plugins {
     alias(additionals.plugins.jetbrains.compose)
     alias(additionals.plugins.kotlin.serialization)
     alias(additionals.plugins.compose.compiler)
+    id("jvmCompat")
 }
 
 val sampleAppNamespace = rootProject.ext["sampleAppNamespace"] as String
@@ -57,10 +58,11 @@ kotlin {
             api(additionals.multiplatform.viewmodel)
             api(additionals.multiplatform.file.access)
 
-            implementation(project(":vopenia-utils"))
+            api(additionals.hotpreview)
 
             api(projects.vopenia)
-            api(project(":vopenia-compose"))
+            api(projects.vopeniaCompose)
+            implementation(projects.vopeniaUtils)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -73,14 +75,6 @@ kotlin {
 
 android {
     namespace = sampleAppNamespace
-    compileSdk = 34
-    defaultConfig {
-        minSdk = 24
-    }
-    compileOptions {
-        sourceCompatibility = rootProject.ext["javaVersionObject"] as JavaVersion
-        targetCompatibility = rootProject.ext["javaVersionObject"] as JavaVersion
-    }
 }
 
 compose.resources {

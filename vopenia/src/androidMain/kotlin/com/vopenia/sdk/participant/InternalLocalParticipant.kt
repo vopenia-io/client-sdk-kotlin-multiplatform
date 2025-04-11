@@ -14,7 +14,6 @@ import com.vopenia.sdk.permissions.PermissionsController
 import com.vopenia.sdk.utils.Log
 import io.livekit.android.events.ParticipantEvent
 import io.livekit.android.events.collect
-import io.livekit.android.room.track.RemoteTrackPublication
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch

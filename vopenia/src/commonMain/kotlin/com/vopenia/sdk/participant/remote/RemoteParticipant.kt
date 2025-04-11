@@ -10,9 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 abstract class RemoteParticipant(
     scope: CoroutineScope,
     defaultState: RemoteParticipantState
-) :
-    Participant<RemoteTrack, RemoteParticipantState, RemoteAudioTrack, RemoteVideoTrack>(scope) {
-
+) : Participant<RemoteTrack, RemoteParticipantState, RemoteAudioTrack, RemoteVideoTrack>(scope) {
     override val stateFlow = MutableStateFlow(defaultState)
 
     override fun equals(other: Any?): Boolean {

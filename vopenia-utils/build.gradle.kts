@@ -31,12 +31,4 @@ kotlin {
 
 android {
     namespace = "${rootProject.ext["namespace"]}.utils"
-    compileSdk = additionals.versions.compileSdkVersion.get().toInt()
-    defaultConfig {
-        minSdk = additionals.versions.minSdkVersion.get().toInt()
-    }
-    compileOptions {
-        sourceCompatibility = rootProject.ext["javaVersionObject"] as JavaVersion
-        targetCompatibility = rootProject.ext["javaVersionObject"] as JavaVersion
-    }
 }

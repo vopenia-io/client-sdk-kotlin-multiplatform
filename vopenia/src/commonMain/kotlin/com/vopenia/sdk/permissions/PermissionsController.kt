@@ -19,6 +19,7 @@ object PermissionsController {
 
     fun openAppSettings() = controller.openAppSettings()
 
+    @Suppress("TooGenericExceptionCaught", "SwallowedException")
     suspend fun checkOrProvide(permission: Permission) {
         if (!isGranted(permission)) {
             try {

@@ -35,6 +35,10 @@ sealed class ParticipantCellHolder<T : IVideoTrack>(
 
         return super.equals(other)
     }
+
+    override fun hashCode(): Int {
+        return this::class.hashCode()
+    }
 }
 
 class LocalParticipantCell(
@@ -87,7 +91,7 @@ class RoomModel(
 
         launch(
             onError = {
-
+                // nothing
             }
         ) {
             room.localParticipant.videoTracks.collect { videoTracks ->
@@ -238,7 +242,7 @@ class RoomModel(
                 if (null != matching) {
                     // if the track is unpublished && is not a camera
                     if (matching.source == Source.SCREEN_SHARE) {
-                        if (!newState.published || newState.muted ) {
+                        if (!newState.published || newState.muted) {
                             originalTracks = originalTracks - matching
                         }
                     }
@@ -259,6 +263,7 @@ class RoomModel(
         }
     }
 
+    @Suppress("SwallowedException")
     fun enableMicrophone(enable: Boolean) = launch {
         try {
             room.localParticipant.enableMicrophone(enable)
@@ -270,6 +275,7 @@ class RoomModel(
         }
     }
 
+    @Suppress("SwallowedException")
     fun enableCamera(enable: Boolean) = launch {
         try {
             room.localParticipant.enableCamera(enable)

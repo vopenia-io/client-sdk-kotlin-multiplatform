@@ -9,6 +9,8 @@ captures
 .cxx
 local.properties
 xcuserdata
+.env*
+*.keystore
 
 gradle/extended/
 

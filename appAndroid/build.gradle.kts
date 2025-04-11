@@ -6,14 +6,12 @@ plugins {
     alias(additionals.plugins.compose.compiler)
     alias(libs.plugins.googleServices)
     alias(libs.plugins.appDistribution)
+    id("jvmCompat")
 }
 
 android {
-    namespace = "eu.codlab.vopenia"
-    compileSdk = 34
+    namespace = "io.vopenia.app"
     defaultConfig {
-        minSdk = 24
-        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
     }
@@ -55,13 +53,6 @@ android {
             signingConfig = signingConfigs.getByName("release")
             //proguardFiles.add(getDefaultProguardFile("proguard-android.txt"))
         }
-    }
-    compileOptions {
-        sourceCompatibility = rootProject.ext["javaVersionObject"] as JavaVersion
-        targetCompatibility = rootProject.ext["javaVersionObject"] as JavaVersion
-    }
-    kotlinOptions {
-        jvmTarget = rootProject.ext["javaVersion"] as String
     }
 }
 

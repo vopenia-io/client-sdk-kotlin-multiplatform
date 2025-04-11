@@ -12,7 +12,6 @@ import com.vopenia.sdk.Room
 import com.vopenia.sdk.VideoViewFactory
 import com.vopenia.sdk.VideoViewWrapper
 import com.vopenia.sdk.participant.track.IVideoTrack
-import com.vopenia.sdk.participant.track.RemoteVideoTrack
 import kotlinx.cinterop.ExperimentalForeignApi
 
 @OptIn(ExperimentalForeignApi::class)

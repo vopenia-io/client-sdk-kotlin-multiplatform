@@ -8,9 +8,6 @@ import com.vopenia.sdk.participant.delegate.LocalParticipantDelegate
 import com.vopenia.sdk.participant.local.LocalParticipant
 import com.vopenia.sdk.participant.local.LocalParticipantState
 import com.vopenia.sdk.participant.track.Kind
-import com.vopenia.sdk.participant.track.RemoteAudioTrack
-import com.vopenia.sdk.participant.track.RemoteTrack
-import com.vopenia.sdk.participant.track.RemoteVideoTrack
 import com.vopenia.sdk.participant.track.kindFrom
 import com.vopenia.sdk.participant.track.local.LocalAudioTrack
 import com.vopenia.sdk.participant.track.local.LocalNoneTrack
@@ -18,15 +15,11 @@ import com.vopenia.sdk.participant.track.local.LocalTrack
 import com.vopenia.sdk.participant.track.local.LocalTrackPublication
 import com.vopenia.sdk.participant.track.local.LocalVideoTrack
 import com.vopenia.sdk.permissions.Permission
-import com.vopenia.sdk.permissions.PermissionRefused
-import com.vopenia.sdk.permissions.PermissionUnrecoverable
 import com.vopenia.sdk.permissions.PermissionsController
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -149,11 +142,10 @@ class InternalLocalParticipant(
         }
     }
 
-
     private fun getOrCreate(
         track: LocalTrackPublication
     ): Pair<LocalTrack, Boolean> {
-        return internalTracks.value.find { it.sid == track.sid().stringValue()}.let {
+        return internalTracks.value.find { it.sid == track.sid().stringValue() }.let {
             if (null != it) {
                 it.updateInternalTrack(track)
                 it to false

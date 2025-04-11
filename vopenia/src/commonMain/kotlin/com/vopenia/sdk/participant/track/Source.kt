@@ -4,5 +4,5 @@ enum class Source {
     CAMERA,
     MICROPHONE,
     SCREEN_SHARE,
-    UNKNOWN;
+    UNKNOWN
 }

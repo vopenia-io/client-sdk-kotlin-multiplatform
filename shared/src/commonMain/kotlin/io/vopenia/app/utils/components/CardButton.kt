@@ -1,9 +1,8 @@
 package io.vopenia.app.utils.components
 
-import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CallEnd
@@ -19,10 +18,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import de.drick.compose.hotpreview.HotPreview
 import eu.codlab.compose.widgets.TextNormal
-import io.vopenia.app.preview.PreviewWrapperDarkLightRow
+import io.vopenia.app.PreviewApp
 import io.vopenia.app.theme.AppColor
-
 
 @Composable
 fun CardButton(
@@ -78,37 +77,43 @@ data class ButtonIcon(
     val contentDescription: String? = null,
 )
 
-@Preview
+@HotPreview(widthDp = 400, heightDp = 600, darkMode = true)
+@HotPreview(widthDp = 400, heightDp = 600, darkMode = false)
 @Composable
-private fun CardButtonPreview() {
-    PreviewWrapperDarkLightRow { modifier, _ ->
-        Column {
-            CardButton(
-                modifier = modifier,
-                leadingIcon = ButtonIcon(
-                    imageVector = Icons.Default.MicOff,
-                    colorFilter = ColorFilter.tint(Color.White)
-                ),
-                trailingIcon = ButtonIcon(
-                    imageVector = Icons.Default.Mic,
-                    colorFilter = ColorFilter.tint(Color.White)
-                ),
-                text = "Test",
-                onClick = { /* */ },
-                colors = CardDefaults.cardColors()
-            )
+private fun CardButtonMicPreview() {
+    PreviewApp {
+        CardButton(
+            modifier = Modifier.fillMaxSize(),
+            leadingIcon = ButtonIcon(
+                imageVector = Icons.Default.MicOff,
+                colorFilter = ColorFilter.tint(Color.White)
+            ),
+            trailingIcon = ButtonIcon(
+                imageVector = Icons.Default.Mic,
+                colorFilter = ColorFilter.tint(Color.White)
+            ),
+            text = "Test",
+            onClick = { /* */ },
+            colors = CardDefaults.cardColors()
+        )
+    }
+}
 
-            CardButton(
-                modifier = modifier,
-                leadingIcon = ButtonIcon(
-                    imageVector = Icons.Default.CallEnd,
-                    colorFilter = ColorFilter.tint(Color.White)
-                ),
-                onClick = { /* */ },
-                colors = CardDefaults.cardColors(
-                    containerColor = AppColor.Red,
-                )
+@HotPreview(widthDp = 400, heightDp = 600, darkMode = true)
+@HotPreview(widthDp = 400, heightDp = 600, darkMode = false)
+@Composable
+private fun CardButtonCallPreview() {
+    PreviewApp {
+        CardButton(
+            modifier = Modifier.fillMaxSize(),
+            leadingIcon = ButtonIcon(
+                imageVector = Icons.Default.CallEnd,
+                colorFilter = ColorFilter.tint(Color.White)
+            ),
+            onClick = { /* */ },
+            colors = CardDefaults.cardColors(
+                containerColor = AppColor.Red,
             )
-        }
+        )
     }
 }

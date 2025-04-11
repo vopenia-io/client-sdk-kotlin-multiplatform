@@ -15,7 +15,6 @@ import com.vopenia.sdk.participant.track.kindFrom
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.MutableStateFlow
 import LiveKitClient.RemoteParticipant as RP
 
 @OptIn(ExperimentalForeignApi::class)
@@ -24,7 +23,8 @@ class InternalRemoteParticipant(
     private val remoteParticipant: RP,
     connected: Boolean
 ) : RemoteParticipant(
-    scope, RemoteParticipantState(
+    scope,
+    RemoteParticipantState(
         connected = connected,
         name = remoteParticipant.name(),
         metadata = remoteParticipant.metadata(),

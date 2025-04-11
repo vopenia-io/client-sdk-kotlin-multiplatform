@@ -17,7 +17,6 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.vopenia.sdk.Room
 import com.vopenia.sdk.initVideoRenderer
 import com.vopenia.sdk.participant.track.IVideoTrack
-import com.vopenia.sdk.participant.track.RemoteVideoTrack
 import com.vopenia.sdk.utils.Log
 import io.livekit.android.renderer.TextureViewRenderer
 import livekit.org.webrtc.RendererCommon

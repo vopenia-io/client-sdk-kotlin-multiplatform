@@ -16,7 +16,6 @@ import io.livekit.android.room.track.Track
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import io.livekit.android.room.participant.RemoteParticipant as RP
 
@@ -24,7 +23,8 @@ class InternalRemoteParticipant(
     scope: CoroutineScope,
     private val remoteParticipant: RP,
     connected: Boolean
-) : RemoteParticipant(scope,
+) : RemoteParticipant(
+    scope,
     RemoteParticipantState(
         connected = connected,
         name = remoteParticipant.name,

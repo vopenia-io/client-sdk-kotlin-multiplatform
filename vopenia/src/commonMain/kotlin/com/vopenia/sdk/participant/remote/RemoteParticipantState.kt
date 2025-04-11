@@ -9,4 +9,4 @@ data class RemoteParticipantState(
     override val metadata: String? = null,
     override val name: String? = null,
     override val permissions: ParticipantPermissions
-): ParticipantState
+) : ParticipantState

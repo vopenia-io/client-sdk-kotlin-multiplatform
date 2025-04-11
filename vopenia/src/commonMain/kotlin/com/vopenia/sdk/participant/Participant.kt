@@ -1,10 +1,5 @@
 package com.vopenia.sdk.participant
 
-import com.vopenia.sdk.participant.track.Kind
-import com.vopenia.sdk.participant.track.RemoteAudioTrack
-import com.vopenia.sdk.participant.track.RemoteNoneTrack
-import com.vopenia.sdk.participant.track.RemoteTrack
-import com.vopenia.sdk.participant.track.RemoteVideoTrack
 import com.vopenia.sdk.participant.track.SubTrack
 import com.vopenia.sdk.utils.map
 import kotlinx.coroutines.CoroutineScope
@@ -28,6 +23,7 @@ abstract class Participant<
     val audioTracks = internalTracks.map(scope) { filterListAudio(it) }
 
     abstract fun filterListAudio(tracks: List<T>): List<A>
+
     abstract fun filterListVideo(tracks: List<T>): List<V>
 
     internal abstract val stateFlow: MutableStateFlow<S>

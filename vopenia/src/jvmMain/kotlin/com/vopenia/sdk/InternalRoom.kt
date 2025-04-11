@@ -5,6 +5,9 @@ import com.vopenia.sdk.participant.ParticipantPermissions
 import com.vopenia.sdk.participant.local.LocalParticipant
 import com.vopenia.sdk.participant.local.LocalParticipantState
 import com.vopenia.sdk.participant.remote.RemoteParticipant
+import com.vopenia.sdk.participant.track.local.LocalAudioTrack
+import com.vopenia.sdk.participant.track.local.LocalTrack
+import com.vopenia.sdk.participant.track.local.LocalVideoTrack
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,24 +27,30 @@ internal actual class InternalRoom actual constructor(
     }
 
     actual val localParticipant: LocalParticipant
-        get() = object : LocalParticipant {
-            private val stateFlow = MutableStateFlow<LocalParticipantState>(
+        get() = object : LocalParticipant(scope) {
+            override val stateFlow = MutableStateFlow<LocalParticipantState>(
                 LocalParticipantState(
                     permissions = ParticipantPermissions()
                 )
             )
 
-            private val isSpeakingStateFlow = MutableStateFlow(true)
             override val identity: String?
                 get() = "Not yet implemented"
 
-            override val state: StateFlow<LocalParticipantState>
-                get() = stateFlow.asStateFlow()
-            override val isSpeakingState: StateFlow<Boolean>
-                get() = isSpeakingStateFlow.asStateFlow()
-
             override suspend fun enableMicrophone(enabled: Boolean) {
                 // not available
+            }
+
+            override suspend fun enableCamera(enabled: Boolean) {
+                // not available
+            }
+
+            override fun filterListAudio(tracks: List<LocalTrack>): List<LocalAudioTrack> {
+                return tracks.filterIsInstance<LocalAudioTrack>()
+            }
+
+            override fun filterListVideo(tracks: List<LocalTrack>): List<LocalVideoTrack> {
+                return tracks.filterIsInstance<LocalVideoTrack>()
             }
         }
 

@@ -1,6 +1,5 @@
 package io.vopenia.app.content.room
 
-import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -26,10 +25,11 @@ import com.vopenia.sdk.compose.ScaleType
 import com.vopenia.sdk.compose.VideoView
 import com.vopenia.sdk.participant.Participant
 import com.vopenia.sdk.participant.track.IVideoTrack
+import de.drick.compose.hotpreview.HotPreview
 import eu.codlab.compose.theme.LocalDarkTheme
 import eu.codlab.compose.widgets.TextNormal
 import io.vopenia.app.LocalFontSizes
-import io.vopenia.app.preview.PreviewWrapperLightColumn
+import io.vopenia.app.PreviewApp
 import io.vopenia.app.theme.AppColor
 import io.vopenia.app.utils.FakeRemoteParticipant
 
@@ -129,12 +129,13 @@ fun RenderUserName(
     }
 }
 
-@Preview
+@HotPreview(widthDp = 100, heightDp = 150, darkMode = true)
+@HotPreview(widthDp = 100, heightDp = 150, darkMode = false)
 @Composable
 private fun ParticipantCellPreview() {
-    PreviewWrapperLightColumn { modifier, _ ->
+    PreviewApp {
         ParticipantCell(
-            modifier = modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize(),
             room = Room(),
             participant = FakeRemoteParticipant(),
         )
