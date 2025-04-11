@@ -24,31 +24,39 @@ android {
         }
     }
     signingConfigs {
-        create("release") {
-            storeFile = File(project.projectDir, "${rootProject.ext["storeFile"]}")
-            storePassword = "${rootProject.ext["storePassword"]}"
-            keyAlias = "${rootProject.ext["keyAlias"]}"
-            keyPassword = "${rootProject.ext["keyPassword"]}"
+        val keyFile = File(project.projectDir, "${rootProject.ext["storeFile"]}")
+        if (keyFile.exists()) {
+            create("release") {
+                storeFile = keyFile
+                storePassword = "${rootProject.ext["storePassword"]}"
+                keyAlias = "${rootProject.ext["keyAlias"]}"
+                keyPassword = "${rootProject.ext["keyPassword"]}"
+            }
+        } else {
+            println("Skipping signing : ${keyFile.absolutePath} doesn't exist")
         }
     }
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false
-            firebaseAppDistribution {
-                appId = "${rootProject.ext["appDistributionId"]}"
-                serviceCredentialsFile = File(
-                    project.projectDir, "vopenia-service-crendentials.json"
-                ).absolutePath
+            val firebaseDistrib = File(project.projectDir, "vopenia-service-crendentials.json")
 
-                artifactPath = File(
-                    project.buildDir,
-                    "outputs/apk/release/appAndroid-release.apk"
-                ).absolutePath
-                artifactType = "APK"
-                releaseNotesFile = File(
-                    rootProject.projectDir, "changelogs/${rootProject.ext["originalVersion"]}.txt"
-                ).absolutePath
-                groups = "internal"
+            if (firebaseDistrib.exists()) {
+                firebaseAppDistribution {
+                    appId = "${rootProject.ext["appDistributionId"]}"
+                    serviceCredentialsFile = firebaseDistrib.absolutePath
+
+                    artifactPath = File(
+                        project.buildDir,
+                        "outputs/apk/release/appAndroid-release.apk"
+                    ).absolutePath
+                    artifactType = "APK"
+                    releaseNotesFile = File(
+                        rootProject.projectDir,
+                        "changelogs/${rootProject.ext["originalVersion"]}.txt"
+                    ).absolutePath
+                    groups = "internal"
+                }
             }
             signingConfig = signingConfigs.getByName("release")
             //proguardFiles.add(getDefaultProguardFile("proguard-android.txt"))
