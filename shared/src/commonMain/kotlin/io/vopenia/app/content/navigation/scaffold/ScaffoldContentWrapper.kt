@@ -73,23 +73,15 @@ fun ColumnScope.ScaffoldContentWrapper(
                         // The start destination
                         initialRoute = NavigateTo.Initialize.route,
                         /*swipeProperties = SwipeProperties(
-                        //spaceToSwipe = 50.dp
-                    )*/
+                            //spaceToSwipe = 50.dp
+                        )*/
                     ) {
                         PossibleRoutes.entries.forEach {
-                            println("Settings routes ${it.impl.route}")
                             scene(
                                 route = it.impl.route,
                                 navTransition = it.impl.navTransition,
                                 swipeProperties = it.impl.swipeProperties
                             ) { backStackEntry ->
-                                // TODO manage emptyList with "defaults" list
-                                it.impl.onEntryIsActive(
-                                    LocalApp.current,
-                                    emptyList(),
-                                    backStackEntry
-                                )
-
                                 it.impl.scene(backStackEntry)
                             }
                         }

@@ -18,9 +18,11 @@ import eu.codlab.safearea.views.SafeArea
 import eu.codlab.safearea.views.SafeAreaBehavior
 import io.vopenia.app.LocalApp
 import io.vopenia.app.content.navigation.NavigateTo
+import io.vopenia.app.content.navigation.PossibleRoutes
 import io.vopenia.app.content.navigation.scaffold.FloatingActionButtonWrapper
 import io.vopenia.app.content.navigation.scaffold.ScaffoldContentWrapper
 import io.vopenia.app.content.pages.initialize.InitializeScreen
+import io.vopenia.app.widgets.MenuItem
 import io.vopenia.app.widgets.rememberSizeAwareScaffoldState
 import moe.tlaster.precompose.navigation.Navigator
 import moe.tlaster.precompose.navigation.rememberNavigator
@@ -35,6 +37,8 @@ fun AppContent() {
     StatusBarAndNavigation()
     val scaffoldState = rememberSizeAwareScaffoldState()
     val navigator = rememberNavigator("AppContent")
+    val currentEntry by navigator.currentEntry.collectAsState(null)
+    val actions: List<MenuItem> = emptyList() // forcing empty actions for now
 
     val model = LocalApp.current
 
@@ -45,6 +49,13 @@ fun AppContent() {
 
     val onMenuItemSelected: (String, NavigateTo) -> Unit = { newTitle, path ->
         model.show(path)
+    }
+
+    LaunchedEffect(currentEntry) {
+        val entry = currentEntry ?: return@LaunchedEffect
+
+        val route = PossibleRoutes.fromRoute(entry.route.route)
+        route?.impl?.onEntryIsActive(model, actions, entry)
     }
 
     CompositionLocalProvider(
