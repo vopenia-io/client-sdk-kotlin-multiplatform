@@ -1,4 +1,4 @@
-package io.vopenia.app.content.join
+package io.vopenia.app.content.pages.join
 
 import androidx.compose.ui.text.input.TextFieldValue
 import eu.codlab.viewmodel.StateViewModel

@@ -9,6 +9,13 @@ enum class WindowType {
     PHABLET,
     TABLET;
 
+    fun isScreenExpanded() = when (this) {
+        SMARTPHONE_TINY -> false
+        SMARTPHONE -> false
+        PHABLET -> true
+        TABLET -> true
+    }
+
     // Factory method that creates an instance of the class based on window width
     companion object {
         fun basedOnWidth(windowWidth: Dp): WindowType {

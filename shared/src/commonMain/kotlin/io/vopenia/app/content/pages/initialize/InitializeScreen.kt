@@ -1,4 +1,4 @@
-package io.vopenia.app.content.initialize
+package io.vopenia.app.content.pages.initialize
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box

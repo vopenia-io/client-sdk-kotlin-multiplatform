@@ -1,4 +1,4 @@
-package io.vopenia.app.content.room
+package io.vopenia.app.content.pages.room
 
 import com.vopenia.sdk.Room
 import com.vopenia.sdk.participant.Participant

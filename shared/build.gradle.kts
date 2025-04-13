@@ -57,6 +57,7 @@ kotlin {
             api(additionals.multiplatform.http.client)
             api(additionals.multiplatform.viewmodel)
             api(additionals.multiplatform.file.access)
+            api(additionals.multiplatform.sentry)
 
             api(additionals.hotpreview)
 

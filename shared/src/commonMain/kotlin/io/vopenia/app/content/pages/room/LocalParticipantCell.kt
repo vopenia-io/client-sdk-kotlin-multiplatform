@@ -1,4 +1,4 @@
-package io.vopenia.app.content.room
+package io.vopenia.app.content.pages.room
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Card
