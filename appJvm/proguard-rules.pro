@@ -1,0 +1,2 @@
+-dontwarn !io.vopenia.**
+-keep class !io.vopenia.** { *; }

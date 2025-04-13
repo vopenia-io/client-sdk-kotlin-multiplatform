@@ -6,6 +6,7 @@ buildscript {
 plugins {
     alias(additionals.plugins.android.application) apply false
     alias(additionals.plugins.android.library) apply false
+    alias(additionals.plugins.kotlin.jvm) apply false
     alias(additionals.plugins.kotlin.android) apply false
     alias(additionals.plugins.kotlin.multiplatform) apply false
     alias(additionals.plugins.kotlin.cocoapods) apply false

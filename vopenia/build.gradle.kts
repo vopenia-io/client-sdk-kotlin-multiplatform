@@ -52,14 +52,14 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(libs.kotlinx.coroutines)
+            implementation(additionals.kotlinx.coroutines)
             implementation(additionals.multiplatform.permissions)
-            implementation(project(":vopenia-utils"))
+            implementation(projects.vopeniaUtils)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
-            implementation(libs.kotlinx.coroutines.test)
-            implementation(project(":vopenia-test-config"))
+            implementation(additionals.kotlinx.coroutines.test)
+            implementation(projects.vopeniaTestConfig)
         }
         androidMain.dependencies {
             implementation(libs.livekit.android)

@@ -39,5 +39,6 @@ include(":vopenia-compose")
 include(":vopenia-test-config")
 include(":shared")
 include(":appAndroid")
+include(":appJvm")
 
 includeBuild "gradle/extended/${ext.GRADLE_EXTENDED_VERSION_USED}/kt-plugins"

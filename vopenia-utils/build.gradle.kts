@@ -18,10 +18,10 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(libs.kotlinx.coroutines)
+            implementation(additionals.kotlinx.coroutines)
         }
         commonTest.dependencies {
-            implementation(libs.kotlinx.coroutines.test)
+            implementation(additionals.kotlinx.coroutines.test)
         }
         jvmMain.dependencies {
             implementation(additionals.kotlinx.coroutines.jvm)
