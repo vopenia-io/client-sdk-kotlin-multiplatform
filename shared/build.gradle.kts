@@ -66,7 +66,7 @@ kotlin {
             implementation(projects.vopeniaUtils)
         }
         commonTest.dependencies {
-            implementation(libs.kotlin.test)
+            implementation(additionals.kotlin.test)
         }
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)

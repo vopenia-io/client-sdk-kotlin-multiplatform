@@ -54,8 +54,6 @@ ext {
     sampleAppNamespace = "com.vopenia.app"
     sampleAppTokenEndpoint = prop("VOPENIA_SAMPLE_APP_TOKEN_ENDPOINT", "")
 
-    kotlinCompilerExtensionVersion = "${libs.versions.kotlin.compiler.extension.version.get()}".toString()
-
     storeFile = prop("VOPENIA_STORE_FILE", "")
     storePassword = prop("VOPENIA_STORE_PASSWORD", "")
     keyAlias = prop("VOPENIA_KEY_ALIAS", "")

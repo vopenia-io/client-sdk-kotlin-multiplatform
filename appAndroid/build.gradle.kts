@@ -3,6 +3,7 @@ import com.google.firebase.appdistribution.gradle.firebaseAppDistribution
 plugins {
     alias(additionals.plugins.android.application)
     alias(additionals.plugins.kotlin.android)
+    alias(additionals.plugins.jetbrains.compose)
     alias(additionals.plugins.compose.compiler)
     alias(libs.plugins.googleServices)
     alias(libs.plugins.appDistribution)
@@ -66,11 +67,8 @@ android {
 
 dependencies {
     implementation(projects.shared)
-    implementation(libs.compose.ui)
-    implementation(libs.compose.ui.tooling.preview)
-    implementation(libs.compose.material3)
-    implementation(libs.androidx.activity.compose)
-    debugImplementation(libs.compose.ui.tooling)
+    implementation(compose.ui)
+    implementation(compose.material3)
 
     // TODO : clean this
     implementation(platform("com.google.firebase:firebase-bom:33.1.1"))

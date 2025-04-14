@@ -15,7 +15,7 @@ tasks.register("buildAndNotarizeDmg") {
 }
 
 dependencies {
-    api(project(":shared"))
+    api(projects.shared)
     api(additionals.kotlinx.coroutines.jvm)
     api(compose.desktop.currentOs)
 }

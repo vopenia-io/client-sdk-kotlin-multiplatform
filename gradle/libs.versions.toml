@@ -1,43 +1,18 @@
 [versions]
-agp = "8.4.1"
-kotlin = "1.9.23"
-compose = "1.6.2"
-kotlin-compiler-extension-version = "1.5.11"
-compose-compiler = "1.5.2"
-compose-material3 = "1.1.2"
-androidx-activityCompose = "1.8.0"
-kotlinx-coroutines = "1.8.0"
-
 livekit-android = "2.4.2"
 
 moko-viewmodel = "0.16.1"
-
-androidx-fragment = "1.3.6"
 
 google-services = "4.4.2"
 app-distribution = "4.0.0"
 
 [libraries]
-kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
-kotlinx-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
-kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
-androidx-fragment = { module = "androidx.fragment:fragment", version.ref = "androidx-fragment" }
-androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activityCompose" }
-compose-ui = { module = "androidx.compose.ui:ui", version.ref = "compose" }
-compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling", version.ref = "compose" }
-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview", version.ref = "compose" }
-compose-foundation = { module = "androidx.compose.foundation:foundation", version.ref = "compose" }
-compose-material3 = { module = "androidx.compose.material3:material3", version.ref = "compose-material3" }
 livekit-android = { module = "io.livekit:livekit-android", version.ref = "livekit-android" }
 
 moko-viewmodel = { module = "dev.icerock.moko:mvvm-core", version.ref = "moko-viewmodel" }
 moko-viewmodel-compose = { module = "dev.icerock.moko:mvvm-compose", version.ref = "moko-viewmodel" }
 
 [plugins]
-androidApplication = { id = "com.android.application", version.ref = "agp" }
-androidLibrary = { id = "com.android.library", version.ref = "agp" }
-kotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
-kotlinCocoapods = { id = "org.jetbrains.kotlin.native.cocoapods", version.ref = "kotlin" }
 googleServices = { id = "com.google.gms.google-services", version.ref = "google-services" }
 appDistribution = { id = "com.google.firebase.appdistribution", version.ref = "app-distribution" }
 spm = { id = "com.github.pagr0m.kotlin.native.spm", version = "0.1.1" }

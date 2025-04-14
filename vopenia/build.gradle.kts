@@ -40,7 +40,6 @@ kotlin {
             //transitiveExport = true
         }
 
-
         pod("LiveKitClient") {
             version = "2.0.9"
             source = path(rootProject.file("../LiveKitClient"))
@@ -57,13 +56,13 @@ kotlin {
             implementation(projects.vopeniaUtils)
         }
         commonTest.dependencies {
-            implementation(libs.kotlin.test)
+            implementation(additionals.kotlin.test)
             implementation(additionals.kotlinx.coroutines.test)
             implementation(projects.vopeniaTestConfig)
         }
         androidMain.dependencies {
             implementation(libs.livekit.android)
-            api(libs.androidx.fragment)
+            api(additionals.androidx.fragment)
         }
         jvmMain.dependencies {
             implementation(additionals.kotlinx.coroutines.jvm)
@@ -135,9 +134,3 @@ fun setIosDeploymentTarget(
         }
     }
 }
-
-//tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-//    kotlinOptions {
-//        jvmTarget = rootProject.ext["javaVersion"] as String
-//    }
-//}
