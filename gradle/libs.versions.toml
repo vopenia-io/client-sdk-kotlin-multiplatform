@@ -1,16 +1,11 @@
 [versions]
 livekit-android = "2.4.2"
 
-moko-viewmodel = "0.16.1"
-
 google-services = "4.4.2"
-app-distribution = "4.0.0"
+app-distribution = "5.1.1"
 
 [libraries]
 livekit-android = { module = "io.livekit:livekit-android", version.ref = "livekit-android" }
-
-moko-viewmodel = { module = "dev.icerock.moko:mvvm-core", version.ref = "moko-viewmodel" }
-moko-viewmodel-compose = { module = "dev.icerock.moko:mvvm-compose", version.ref = "moko-viewmodel" }
 
 [plugins]
 googleServices = { id = "com.google.gms.google-services", version.ref = "google-services" }

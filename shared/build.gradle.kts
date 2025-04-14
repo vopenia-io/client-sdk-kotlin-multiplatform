@@ -46,9 +46,6 @@ kotlin {
 
             api(additionals.kotlinx.serialization.json)
 
-            implementation(libs.moko.viewmodel)
-            implementation(libs.moko.viewmodel.compose)
-
             api(additionals.multiplatform.precompose)
             api(additionals.multiplatform.safearea)
             api(additionals.multiplatform.widgets.compose)
