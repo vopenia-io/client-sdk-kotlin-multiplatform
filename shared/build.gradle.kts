@@ -11,7 +11,7 @@ plugins {
     id("jvmCompat")
 }
 
-val sampleAppNamespace = rootProject.ext["sampleAppNamespace"] as String
+val sampleNamespaceShared = rootProject.ext["sampleNamespaceShared"] as String
 
 kotlin {
     androidTarget()
@@ -75,17 +75,17 @@ kotlin {
 }
 
 android {
-    namespace = sampleAppNamespace
+    namespace = sampleNamespaceShared
 }
 
 compose.resources {
     publicResClass = true
-    packageOfResClass = "$sampleAppNamespace.res"
+    packageOfResClass = "$sampleNamespaceShared.res"
     generateResClass = always
 }
 
 buildkonfig {
-    packageName = "$sampleAppNamespace.config"
+    packageName = "$sampleNamespaceShared.config"
 
     defaultConfigs {
         listOf(

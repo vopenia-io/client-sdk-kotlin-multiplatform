@@ -11,7 +11,7 @@ plugins {
 }
 
 android {
-    namespace = "io.vopenia.app"
+    namespace = "${rootProject.ext["sampleNamespaceApp"]}"
     defaultConfig {
         versionCode = 1
         versionName = "1.0"

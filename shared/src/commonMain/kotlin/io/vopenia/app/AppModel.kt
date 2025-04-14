@@ -11,6 +11,7 @@ import io.vopenia.app.session.SavedSession
 import io.vopenia.app.utils.safeLaunch
 import io.vopenia.app.widgets.AppBarState
 import io.vopenia.app.widgets.FloatingActionButtonState
+import io.vopenia.shared.config.BuildKonfig
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,7 +20,7 @@ import moe.tlaster.precompose.navigation.Navigator
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
-private var baseUrl = com.vopenia.app.config.BuildKonfig.ENDPOINT_TOKEN
+private var baseUrl = BuildKonfig.ENDPOINT_TOKEN
 
 fun setEndpoint(base: String) {
     baseUrl = base

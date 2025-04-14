@@ -31,7 +31,7 @@ compose.desktop {
         mainClass = "MainApplicationKt"
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "io.vopenia.app"
+            packageName = "${rootProject.ext["sampleNamespaceApp"]}"
             packageVersion = "1.0.0"
 
             windows {

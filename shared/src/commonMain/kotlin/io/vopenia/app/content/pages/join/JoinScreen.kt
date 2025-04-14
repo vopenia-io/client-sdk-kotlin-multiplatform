@@ -22,8 +22,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.vopenia.app.res.Res
-import com.vopenia.app.res.join_background
 import de.drick.compose.hotpreview.HotPreview
 import eu.codlab.compose.theme.LocalDarkTheme
 import eu.codlab.compose.widgets.TextNormal
@@ -32,6 +30,8 @@ import eu.codlab.viewmodel.rememberViewModel
 import io.vopenia.app.LocalApp
 import io.vopenia.app.LocalFontSizes
 import io.vopenia.app.PreviewApp
+import io.vopenia.shared.res.Res
+import io.vopenia.shared.res.join_background
 import org.jetbrains.compose.resources.painterResource
 
 @Suppress("LongMethod")

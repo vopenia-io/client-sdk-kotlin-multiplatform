@@ -14,6 +14,8 @@ def propSuffix = { prefix, suffixKeyName ->
 }
 
 ext {
+    sampleNamespaceShared = "io.vopenia.shared"
+    sampleNamespaceApp = "io.vopenia.app"
     namespace = "com.vopenia.sdk"
     javaVersion = "17"
     javaVersionObject = JavaVersion.VERSION_17
@@ -51,7 +53,6 @@ ext {
     testConfigliveKitApiKey = prop("TEST_CONFIG_LIVEKIT_API_KEY", "")
     testConfigliveKitApiSecret = prop("TEST_CONFIG_LIVEKIT_API_SECRET", "")
 
-    sampleAppNamespace = "com.vopenia.app"
     sampleAppTokenEndpoint = prop("VOPENIA_SAMPLE_APP_TOKEN_ENDPOINT", "")
 
     storeFile = prop("VOPENIA_STORE_FILE", "")
