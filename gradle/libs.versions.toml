@@ -1,5 +1,5 @@
 [versions]
-livekit-android = "2.4.2"
+livekit-android = "2.16.0"
 
 google-services = "4.4.2"
 app-distribution = "5.1.1"

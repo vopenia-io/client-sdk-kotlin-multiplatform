@@ -8,5 +8,6 @@ fun Track.Source.toSource(): Source {
         Track.Source.MICROPHONE -> Source.MICROPHONE
         Track.Source.SCREEN_SHARE -> Source.SCREEN_SHARE
         Track.Source.UNKNOWN -> Source.UNKNOWN
+        Track.Source.SCREEN_SHARE_AUDIO -> Source.SCREEN_SHARE_AUDIO
     }
 }

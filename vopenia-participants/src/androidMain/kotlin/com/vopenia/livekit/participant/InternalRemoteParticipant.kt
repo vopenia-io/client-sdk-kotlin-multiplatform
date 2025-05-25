@@ -186,6 +186,26 @@ class InternalRemoteParticipant(
                         wrapper.setSubscribed(false)
                         if (new) append(wrapper)
                     }
+
+                    is ParticipantEvent.AttributesChanged -> {
+                        // TODO
+                    }
+
+                    is ParticipantEvent.LocalTrackPublicationFailed -> {
+                        // TODO
+                    }
+
+                    is ParticipantEvent.LocalTrackSubscribed -> {
+                        // TODO
+                    }
+
+                    is ParticipantEvent.StateChanged -> {
+                        // TODO
+                    }
+
+                    is ParticipantEvent.TranscriptionReceived -> {
+                        // TODO
+                    }
                 }
             }
         }

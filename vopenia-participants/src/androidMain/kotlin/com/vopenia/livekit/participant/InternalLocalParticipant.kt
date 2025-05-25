@@ -121,6 +121,26 @@ class InternalLocalParticipant(
                     is ParticipantEvent.TrackUnsubscribed -> {
                         // TODO
                     }
+
+                    is ParticipantEvent.AttributesChanged -> {
+                        // TODO
+                    }
+
+                    is ParticipantEvent.LocalTrackPublicationFailed -> {
+                        // TODO
+                    }
+
+                    is ParticipantEvent.LocalTrackSubscribed -> {
+                        // TODO
+                    }
+
+                    is ParticipantEvent.StateChanged -> {
+                        // TODO
+                    }
+
+                    is ParticipantEvent.TranscriptionReceived -> {
+                        // TODO
+                    }
                 }
             }
         }
