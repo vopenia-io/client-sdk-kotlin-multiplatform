@@ -1,9 +1,14 @@
 buildscript {
     apply from: "gradle/versions.gradle"
     apply from: gradle.extended.files.modules
+
+    dependencies {
+        classpath additionals.nexus.gradlePlugin
+    }
 }
 
 plugins {
+    alias(additionals.plugins.publish.nexus)
     alias(additionals.plugins.android.application) apply false
     alias(additionals.plugins.android.library) apply false
     alias(additionals.plugins.kotlin.jvm) apply false
@@ -20,6 +25,21 @@ plugins {
     alias(additionals.plugins.dokka)
 }
 
+def getExtraString = { String name ->
+    if (rootProject.ext.has(name)) return rootProject.ext[name]?.toString()
+    else return null
+}
+
+nexusPublishing {
+    repositories {
+        sonatype {
+            nexusUrl = URI.create("https://ossrh-staging-api.central.sonatype.com/service/local/")
+            snapshotRepositoryUrl = URI.create("https://central.sonatype.com/repository/maven-snapshots/")
+            username = getExtraString("sonatypeUsername") ?: ""
+            password = getExtraString("sonatypePassword") ?: ""
+        }
+    }
+}
 
 subprojects {
     if (isSourcesModule(it)) {

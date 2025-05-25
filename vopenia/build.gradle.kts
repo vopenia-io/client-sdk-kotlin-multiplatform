@@ -8,6 +8,7 @@ plugins {
     alias(additionals.plugins.multiplatform.buildkonfig)
     id("jvmCompat")
     id("iosSimulatorConfiguration")
+    id("publication")
 }
 
 kotlin {
@@ -37,11 +38,11 @@ kotlin {
         framework {
             baseName = "vopenia"
             isStatic = false
-            //transitiveExport = true
+            transitiveExport = true
         }
 
         pod("LiveKitClient") {
-            version = "2.0.9"
+            version = "2.6.0"
             source = path(rootProject.file("../LiveKitClient"))
             moduleName = "LiveKitClient"
             packageName = "LiveKitClient"
@@ -53,6 +54,9 @@ kotlin {
         commonMain.dependencies {
             implementation(additionals.kotlinx.coroutines)
             implementation(additionals.multiplatform.permissions)
+            implementation(additionals.multiplatform.permissions.bluetooth)
+            implementation(additionals.multiplatform.permissions.camera)
+            implementation(additionals.multiplatform.permissions.microphone)
             implementation(projects.vopeniaUtils)
         }
         commonTest.dependencies {

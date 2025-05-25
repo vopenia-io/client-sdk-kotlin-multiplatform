@@ -5,6 +5,7 @@ plugins {
     alias(additionals.plugins.android.library)
     id("jvmCompat")
     id("iosSimulatorConfiguration")
+    id("publication")
 }
 
 kotlin {
