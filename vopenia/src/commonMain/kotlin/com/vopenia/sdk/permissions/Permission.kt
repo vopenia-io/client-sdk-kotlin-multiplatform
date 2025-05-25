@@ -1,6 +1,10 @@
 package com.vopenia.sdk.permissions
 
-import eu.codlab.permissions.Permission as P
+import eu.codlab.permissions.bluetooth.PermissionBluetoothAdvertise
+import eu.codlab.permissions.bluetooth.PermissionBluetoothConnect
+import eu.codlab.permissions.bluetooth.PermissionBluetoothScan
+import eu.codlab.permissions.camera.PermissionCamera
+import eu.codlab.permissions.microphone.PermissionMicrophone
 
 enum class Permission {
     CAMERA,
@@ -9,13 +13,11 @@ enum class Permission {
     BLUETOOTH_ADVERTISE,
     BLUETOOTH_CONNECT;
 
-    internal fun toPermission(): P {
-        return when (this) {
-            CAMERA -> P.CAMERA
-            RECORD_AUDIO -> P.RECORD_AUDIO
-            BLUETOOTH_SCAN -> P.BLUETOOTH_SCAN
-            BLUETOOTH_ADVERTISE -> P.BLUETOOTH_ADVERTISE
-            BLUETOOTH_CONNECT -> P.BLUETOOTH_CONNECT
-        }
+    internal fun toPermission() = when (this) {
+        CAMERA -> PermissionCamera
+        RECORD_AUDIO -> PermissionMicrophone
+        BLUETOOTH_SCAN -> PermissionBluetoothScan
+        BLUETOOTH_ADVERTISE -> PermissionBluetoothAdvertise
+        BLUETOOTH_CONNECT -> PermissionBluetoothConnect
     }
 }
