@@ -7,6 +7,7 @@ def versionProps = new Properties()
 new File(parentDir, "../version.properties").withInputStream { versionProps.load(it) }
 
 def defaultVersion = versionProps.getProperty("version")
+def defaultGroup = "io.vopenia"
 
 def propSuffix = { prefix, suffixKeyName ->
     return rootProject.properties.containsKey(suffixKeyName)
@@ -41,7 +42,7 @@ ext {
 
     signingKeyId = prop("signing.keyId", null)
 
-    groupId = prop("GROUP_ID", "com.vopenia")
+    group = prop("GROUP_ID", defaultGroup)
     originalVersion = defaultVersion
     version = propSuffix(defaultVersion, "SUFFIX")
 

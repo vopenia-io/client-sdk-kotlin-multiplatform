@@ -30,6 +30,9 @@ def getExtraString = { String name ->
     else return null
 }
 
+group = rootProject.ext.group
+version = rootProject.ext.version
+
 nexusPublishing {
     repositories {
         sonatype {
@@ -42,6 +45,9 @@ nexusPublishing {
 }
 
 subprojects {
+    group = rootProject.ext.group
+    version = rootProject.ext.version
+
     if (isSourcesModule(it)) {
         apply from: gradle.extended.files.moduleSetup
     }
