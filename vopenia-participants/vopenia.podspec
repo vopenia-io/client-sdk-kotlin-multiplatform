@@ -6,16 +6,16 @@ Pod::Spec.new do |spec|
     spec.authors                  = ''
     spec.license                  = ''
     spec.summary                  = 'Some description for the Shared Module'
-    spec.vendored_frameworks      = 'build/cocoapods/framework/vopenia_participants.framework'
+    spec.vendored_frameworks      = 'build/cocoapods/framework/vopenia.framework'
     spec.libraries                = 'c++'
     spec.ios.deployment_target    = '16.0'
     spec.osx.deployment_target    = '16.0'
     spec.dependency 'LiveKitClient', '2.6.0'
                 
-    if !Dir.exist?('build/cocoapods/framework/vopenia_participants.framework') || Dir.empty?('build/cocoapods/framework/vopenia_participants.framework')
+    if !Dir.exist?('build/cocoapods/framework/vopenia.framework') || Dir.empty?('build/cocoapods/framework/vopenia.framework')
         raise "
 
-        Kotlin framework 'vopenia_participants' doesn't exist yet, so a proper Xcode project can't be generated.
+        Kotlin framework 'vopenia' doesn't exist yet, so a proper Xcode project can't be generated.
         'pod install' should be executed after running ':generateDummyFramework' Gradle task:
 
             ./gradlew :vopenia:generateDummyFramework
@@ -29,7 +29,7 @@ Pod::Spec.new do |spec|
                 
     spec.pod_target_xcconfig = {
         'KOTLIN_PROJECT_PATH' => ':vopenia',
-        'PRODUCT_MODULE_NAME' => 'vopenia_participants',
+        'PRODUCT_MODULE_NAME' => 'vopenia',
     }
                 
     spec.script_phases = [

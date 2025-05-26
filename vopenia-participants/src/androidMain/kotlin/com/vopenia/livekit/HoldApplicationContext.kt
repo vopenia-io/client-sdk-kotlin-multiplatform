@@ -7,7 +7,7 @@ import android.content.pm.ProviderInfo
 import android.net.Uri
 
 object Sdk {
-    internal lateinit var applicationContext: Context
+    lateinit var applicationContext: Context
 }
 
 class HoldApplicationContext : ContentProvider() {

@@ -33,6 +33,7 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "VopeniaSDK"
+include(":vopenia-participants")
 include(":vopenia")
 include(":vopenia-utils")
 include(":vopenia-compose")

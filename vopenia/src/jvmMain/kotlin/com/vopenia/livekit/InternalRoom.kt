@@ -1,13 +1,9 @@
 package com.vopenia.livekit
 
 import com.vopenia.livekit.events.ConnectionState
-import com.vopenia.livekit.participant.ParticipantPermissions
+import com.vopenia.livekit.participant.InternalLocalParticipant
 import com.vopenia.livekit.participant.local.LocalParticipant
-import com.vopenia.livekit.participant.local.LocalParticipantState
 import com.vopenia.livekit.participant.remote.RemoteParticipant
-import com.vopenia.livekit.participant.track.local.LocalAudioTrack
-import com.vopenia.livekit.participant.track.local.LocalTrack
-import com.vopenia.livekit.participant.track.local.LocalVideoTrack
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,32 +23,7 @@ internal actual class InternalRoom actual constructor(
     }
 
     actual val localParticipant: LocalParticipant
-        get() = object : LocalParticipant(scope) {
-            override val stateFlow = MutableStateFlow(
-                LocalParticipantState(
-                    permissions = ParticipantPermissions()
-                )
-            )
-
-            override val identity: String?
-                get() = "Not yet implemented"
-
-            override suspend fun enableMicrophone(enabled: Boolean) {
-                // not available
-            }
-
-            override suspend fun enableCamera(enabled: Boolean) {
-                // not available
-            }
-
-            override fun filterListAudio(tracks: List<LocalTrack>): List<LocalAudioTrack> {
-                return tracks.filterIsInstance<LocalAudioTrack>()
-            }
-
-            override fun filterListVideo(tracks: List<LocalTrack>): List<LocalVideoTrack> {
-                return tracks.filterIsInstance<LocalVideoTrack>()
-            }
-        }
+        get() = InternalLocalParticipant(scope)
 
     private val remoteParticipantsState = MutableStateFlow<List<RemoteParticipant>>(emptyList())
     actual val remoteParticipants: StateFlow<List<RemoteParticipant>>

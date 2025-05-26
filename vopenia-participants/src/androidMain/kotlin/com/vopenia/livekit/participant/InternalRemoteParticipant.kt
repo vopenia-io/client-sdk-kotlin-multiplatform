@@ -50,7 +50,7 @@ class InternalRemoteParticipant(
 
     override val identity = remoteParticipant.identity?.value
 
-    internal fun onConnect() {
+    fun onConnect() {
         if (null == collection) {
             startCollect()
 
@@ -60,7 +60,7 @@ class InternalRemoteParticipant(
         }
     }
 
-    internal fun onDisconnect() {
+    fun onDisconnect() {
         collection?.let {
             it.cancel()
 

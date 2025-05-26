@@ -116,7 +116,7 @@ class InternalRemoteParticipant(
         )
     )
 
-    internal fun onConnect() {
+    fun onConnect() {
         if (isAttached) return
 
         remoteParticipant.trackPublications().values.forEach {
@@ -136,7 +136,7 @@ class InternalRemoteParticipant(
         }
     }
 
-    internal fun onDisconnect() {
+    fun onDisconnect() {
         if (!isAttached) return
 
         remoteParticipant.removeDelegate(delegate)

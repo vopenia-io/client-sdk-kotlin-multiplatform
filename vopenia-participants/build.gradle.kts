@@ -36,7 +36,7 @@ kotlin {
         ios.deploymentTarget = "16.0"
         osx.deploymentTarget = "16.0"
         framework {
-            baseName = "vopenia-participants"
+            baseName = "vopenia"
             isStatic = false
             transitiveExport = true
         }
@@ -57,7 +57,6 @@ kotlin {
             implementation(additionals.multiplatform.permissions.bluetooth)
             implementation(additionals.multiplatform.permissions.camera)
             implementation(additionals.multiplatform.permissions.microphone)
-            api(projects.vopeniaParticipants)
             implementation(projects.vopeniaUtils)
         }
         commonTest.dependencies {
@@ -76,7 +75,7 @@ kotlin {
 }
 
 android {
-    namespace = rootProject.ext["namespace"] as String
+    namespace = "${rootProject.ext["namespace"]}.participants"
     compileSdk = additionals.versions.compileSdkVersion.get().toInt()
     defaultConfig {
         minSdk = additionals.versions.minSdkVersion.get().toInt()
