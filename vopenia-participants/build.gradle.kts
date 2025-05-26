@@ -87,7 +87,7 @@ android {
 }
 
 buildkonfig {
-    packageName = rootProject.ext["namespace"] as String
+    packageName = "${rootProject.ext["namespace"]}.participants"
 
     defaultConfigs {
         buildConfigField(
