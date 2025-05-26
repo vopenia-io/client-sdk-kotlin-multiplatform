@@ -1,11 +1,11 @@
 package io.vopenia.app.utils
 
-import com.vopenia.sdk.participant.ParticipantPermissions
-import com.vopenia.sdk.participant.remote.RemoteParticipant
-import com.vopenia.sdk.participant.remote.RemoteParticipantState
-import com.vopenia.sdk.participant.track.RemoteAudioTrack
-import com.vopenia.sdk.participant.track.RemoteTrack
-import com.vopenia.sdk.participant.track.RemoteVideoTrack
+import com.vopenia.livekit.participant.ParticipantPermissions
+import com.vopenia.livekit.participant.remote.RemoteParticipant
+import com.vopenia.livekit.participant.remote.RemoteParticipantState
+import com.vopenia.livekit.participant.track.RemoteAudioTrack
+import com.vopenia.livekit.participant.track.RemoteTrack
+import com.vopenia.livekit.participant.track.RemoteVideoTrack
 import com.vopenia.sdk.utils.Dispatchers
 import kotlinx.coroutines.CoroutineScope
 

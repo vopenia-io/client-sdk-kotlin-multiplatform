@@ -7,8 +7,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import com.vopenia.sdk.Room
-import com.vopenia.sdk.participant.local.LocalParticipant
+import com.vopenia.livekit.Room
+import com.vopenia.livekit.participant.local.LocalParticipant
 import eu.codlab.compose.widgets.TextNormal
 
 @Composable

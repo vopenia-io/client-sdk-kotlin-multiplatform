@@ -1,7 +1,7 @@
 package io.vopenia.app
 
 import androidx.compose.material.ScaffoldState
-import com.vopenia.sdk.Room
+import com.vopenia.livekit.Room
 import eu.codlab.files.VirtualFile
 import eu.codlab.viewmodel.StateViewModel
 import eu.codlab.viewmodel.launch
