@@ -10,7 +10,8 @@ Pod::Spec.new do |spec|
     spec.libraries                = 'c++'
     spec.ios.deployment_target    = '16.0'
     spec.osx.deployment_target    = '16.0'
-    spec.dependency 'LiveKitClient', '2.6.0'
+    spec.dependency 'LiveKitClient'
+    spec.dependency 'LiveKitClientKotlin', '2.6.0'
                 
     if !Dir.exist?('build/cocoapods/framework/vopenia.framework') || Dir.empty?('build/cocoapods/framework/vopenia.framework')
         raise "

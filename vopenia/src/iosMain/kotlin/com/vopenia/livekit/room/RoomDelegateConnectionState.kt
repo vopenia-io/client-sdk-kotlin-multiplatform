@@ -6,6 +6,7 @@ import LiveKitClient.RemoteParticipant
 import LiveKitClient.Room
 import LiveKitClient.RoomDelegateProtocol
 import com.vopenia.livekit.NSErrorException
+import com.vopenia.sdk.utils.Log
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.ObjCSignatureOverride
 import platform.darwin.NSObject
@@ -18,12 +19,12 @@ class RoomDelegateConnectionState(
     private val onParticipantDisconnected: (RemoteParticipant) -> Unit,
 ) : RoomDelegateProtocol, NSObject() {
     override fun roomDidConnect(room: Room) {
-        println("roomDidConnect")
+        Log.d("RoomDelegateConnectionState", "roomDidConnect")
         onConnectionState(CS.Connected)
     }
 
     override fun roomDidReconnect(room: Room) {
-        println("roomDidReconnect")
+        Log.d("RoomDelegateConnectionState", "roomDidReconnect")
         onConnectionState(CS.Connected)
     }
 
@@ -32,7 +33,7 @@ class RoomDelegateConnectionState(
         didUpdateConnectionState: ConnectionState,
         from: ConnectionState
     ) {
-        println("new state $didUpdateConnectionState")
+        Log.d("RoomDelegateConnectionState", "new state $didUpdateConnectionState")
         when (didUpdateConnectionState) {
             LiveKitClient.ConnectionStateConnected -> onConnectionState(CS.Connected)
             LiveKitClient.ConnectionStateConnecting -> onConnectionState(CS.Connecting)

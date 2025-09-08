@@ -30,6 +30,7 @@ class InternalLocalParticipant(
     scope: CoroutineScope,
     private val localParticipant: LP
 ) : LocalParticipant(scope) {
+    private val delegateWrapper = DelegateKotlin()
     override val stateFlow = MutableStateFlow(
         LocalParticipantState(
             permissions = InternalParticipantPermissions(
@@ -40,7 +41,7 @@ class InternalLocalParticipant(
 
     override val identity = localParticipant.identity()?.stringValue()
 
-    private val delegate = localParticipant.wrapDelegateWithDelegate(
+    private val delegate = delegateWrapper.wrapParticipantDelegateWithDelegate(
         LocalParticipantDelegate(
             onConnectionQuality = { connectionQuality ->
                 // scope.async {
@@ -101,7 +102,7 @@ class InternalLocalParticipant(
     )
 
     init {
-        localParticipant.addDelegate(delegate)
+        delegateWrapper.appendToParticipant(localParticipant, delegate)
     }
 
     override fun filterListAudio(tracks: List<LocalTrack>): List<LocalAudioTrack> {

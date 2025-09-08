@@ -22,6 +22,9 @@ kotlin {
         summary = "UI Compose library for vopanie"
         homepage = "Link to the Shared Module homepage"
         version = "1.0"
+        specRepos {
+            url("https://github.com/livekit/podspecs")
+        }
         ios.deploymentTarget = "16.0"
         osx.deploymentTarget = "16.0"
         framework {
@@ -30,11 +33,11 @@ kotlin {
             transitiveExport = true
         }
 
-        pod("LiveKitClient") {
+        pod("LiveKitClientKotlin") {
             version = "2.6.0"
-            source = path(rootProject.file("../LiveKitClient"))
-            moduleName = "LiveKitClient"
-            packageName = "LiveKitClient"
+            source = path(rootProject.file("../LiveKitClientKotlin"))
+            moduleName = "LiveKitClientKotlin"
+            packageName = "LiveKitClientKotlin"
             extraOpts += listOf("-compiler-option", "-fmodules")
         }
     }
@@ -47,6 +50,8 @@ kotlin {
 
             implementation(projects.vopenia)
             implementation(projects.vopeniaUtils)
+
+            implementation(additionals.multiplatform.widgets.compose)
         }
         androidMain.dependencies {
             implementation(libs.livekit.android)

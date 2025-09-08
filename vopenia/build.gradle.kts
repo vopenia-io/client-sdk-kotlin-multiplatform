@@ -4,7 +4,6 @@ plugins {
     alias(additionals.plugins.kotlin.multiplatform)
     alias(additionals.plugins.kotlin.cocoapods)
     alias(additionals.plugins.android.library)
-    alias(libs.plugins.spm)
     alias(additionals.plugins.multiplatform.buildkonfig)
     id("jvmCompat")
     id("iosSimulatorConfiguration")
@@ -33,6 +32,10 @@ kotlin {
         summary = "Some description for the Shared Module"
         homepage = "Link to the Shared Module homepage"
         version = "1.0"
+        specRepos {
+            url("https://github.com/livekit/podspecs")
+            url("https://github.com/vopenia-io/pod-repo")
+        }
         ios.deploymentTarget = "16.0"
         osx.deploymentTarget = "16.0"
         framework {
@@ -41,11 +44,10 @@ kotlin {
             transitiveExport = true
         }
 
-        pod("LiveKitClient") {
+        pod("LiveKitClientKotlin") {
             version = "2.6.0"
-            source = path(rootProject.file("../LiveKitClient"))
-            moduleName = "LiveKitClient"
-            packageName = "LiveKitClient"
+            moduleName = "LiveKitClientKotlin"
+            packageName = "LiveKitClientKotlin"
             extraOpts += listOf("-compiler-option", "-fmodules")
         }
     }

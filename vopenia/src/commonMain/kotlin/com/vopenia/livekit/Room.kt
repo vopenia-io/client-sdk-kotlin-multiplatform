@@ -5,6 +5,7 @@ import com.vopenia.livekit.permissions.Permission
 import com.vopenia.livekit.permissions.PermissionRefused
 import com.vopenia.livekit.permissions.PermissionsController
 import com.vopenia.sdk.utils.Dispatchers
+import com.vopenia.sdk.utils.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,6 +26,10 @@ class Room {
     val remoteParticipants = internalRoom.remoteParticipants
 
     val localParticipant = internalRoom.localParticipant
+
+    init {
+        Log.d("Room", "creating room for sdk v0.0.9-alpha4")
+    }
 
     suspend fun connect(
         url: String,

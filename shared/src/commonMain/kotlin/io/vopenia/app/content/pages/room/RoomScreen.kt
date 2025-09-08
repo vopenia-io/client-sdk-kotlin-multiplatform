@@ -12,7 +12,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.vopenia.sdk.Room
+import com.vopenia.livekit.Room
 import com.vopenia.sdk.utils.Log
 import eu.codlab.compose.widgets.StatusBarAndNavigation
 import eu.codlab.safearea.views.SafeArea

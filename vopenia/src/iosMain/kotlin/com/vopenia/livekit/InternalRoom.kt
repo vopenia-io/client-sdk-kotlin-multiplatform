@@ -3,6 +3,7 @@ package com.vopenia.livekit
 import com.vopenia.livekit.events.ConnectionState
 import com.vopenia.livekit.participant.local.LocalParticipant
 import com.vopenia.livekit.participant.remote.RemoteParticipant
+import com.vopenia.sdk.utils.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,7 +15,7 @@ internal actual class InternalRoom actual constructor(
 ) {
     private val roomDelegate = RoomDelegate(scope) {
         scope.launch {
-            println("launching new event $it")
+            Log.d("InternalRoom", "launching new event $it")
             connectionStateEmitter.emit(it)
         }
     }

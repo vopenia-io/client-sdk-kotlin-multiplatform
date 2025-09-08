@@ -5,11 +5,12 @@ import LiveKitClient.RemoteParticipant
 import LiveKitClient.Room
 import LiveKitClient.RoomDelegateProtocol
 import LiveKitClient.RoomOptions
-import LiveKitClient.addDelegate
+import LiveKitClientKotlin.DelegateKotlin
 import com.vopenia.livekit.events.ConnectionState
 import com.vopenia.livekit.participant.InternalLocalParticipant
 import com.vopenia.livekit.participant.InternalRemoteParticipant
 import com.vopenia.livekit.room.RoomDelegateConnectionState
+import com.vopenia.sdk.utils.Log
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,6 +25,7 @@ class RoomDelegate(
     private val scope: CoroutineScope,
     private val emit: (ConnectionState) -> Unit
 ) {
+    private val delegateWrapper = DelegateKotlin()
     private val connectOptions = ConnectOptions()
     private val roomOptions = RoomOptions()
     private val room: Room = Room(null, connectOptions, roomOptions)
@@ -58,7 +60,7 @@ class RoomDelegate(
     }
 
     private val delegates: List<RoomDelegateProtocol> = listOf(
-        room.wrapDelegateWithDelegate(
+        delegateWrapper.wrapRoomDelegateWithDelegate(
             RoomDelegateConnectionState(
                 emit,
                 onParticipantConnected = { onParticipantConnected(it) },
@@ -68,9 +70,10 @@ class RoomDelegate(
     )
 
     init {
+        Log.d("RoomDelegate", "RoomDelegate initialization")
         delegates.forEach {
-            println("adding $it")
-            room.addDelegate(it)
+            Log.d("RoomDelegate", "adding $it to the room's delegate ($room")
+            delegateWrapper.appendToRoom(room, it)
         }
     }
 

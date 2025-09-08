@@ -1,7 +1,7 @@
 package com.vopenia.livekit.participant
 
-import LiveKitClient.addDelegate
 import LiveKitClient.removeDelegate
+import LiveKitClientKotlin.DelegateKotlin
 import com.vopenia.livekit.participant.delegate.RemoteParticipantDelegate
 import com.vopenia.livekit.participant.remote.RemoteParticipant
 import com.vopenia.livekit.participant.remote.RemoteParticipantState
@@ -33,6 +33,7 @@ class InternalRemoteParticipant(
         ).toMultiplatform()
     )
 ) {
+    private val delegateWrapper = DelegateKotlin()
     private var isAttached = false
 
     override fun filterListAudio(tracks: List<RemoteTrack>): List<RemoteAudioTrack> {
@@ -45,7 +46,7 @@ class InternalRemoteParticipant(
 
     override val identity = remoteParticipant.identity()?.stringValue()
 
-    private val delegate = remoteParticipant.wrapDelegateWithDelegate(
+    private val delegate = delegateWrapper.wrapParticipantDelegateWithDelegate(
         RemoteParticipantDelegate(
             onConnectionQuality = { connectionQuality ->
                 // scope.async {
@@ -128,7 +129,8 @@ class InternalRemoteParticipant(
             }
         }
 
-        remoteParticipant.addDelegate(delegate)
+        println("added the delegate to the remote participant")
+        delegateWrapper.appendToParticipant(remoteParticipant, delegate)
         isAttached = true
 
         scope.async {

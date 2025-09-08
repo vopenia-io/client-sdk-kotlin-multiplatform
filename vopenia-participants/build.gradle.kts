@@ -33,6 +33,9 @@ kotlin {
         summary = "Some description for the Shared Module"
         homepage = "Link to the Shared Module homepage"
         version = "1.0"
+        specRepos {
+            url("https://github.com/livekit/podspecs")
+        }
         ios.deploymentTarget = "16.0"
         osx.deploymentTarget = "16.0"
         framework {
@@ -42,11 +45,18 @@ kotlin {
         }
 
         pod("LiveKitClient") {
-            version = "2.6.0"
-            source = path(rootProject.file("../LiveKitClient"))
             moduleName = "LiveKitClient"
             packageName = "LiveKitClient"
             extraOpts += listOf("-compiler-option", "-fmodules")
+        }
+
+        pod("LiveKitClientKotlin") {
+            version = "2.6.0"
+            source = path(rootProject.file("../LiveKitClientKotlin"))
+            moduleName = "LiveKitClientKotlin"
+            packageName = "LiveKitClientKotlin"
+            extraOpts += listOf("-compiler-option", "-fmodules")
+            useInteropBindingFrom("LiveKitClient")
         }
     }
 
