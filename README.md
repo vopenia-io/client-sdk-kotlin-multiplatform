@@ -2,6 +2,14 @@
 
 ## Installation
 
+### LiveKitClientKotlin
+
+iOS requires a specific wrapper around the Objc/Swift implementation due to ABI compatibility.
+
+The project is available at https://github.com/vopenia-io/pod-LiveKitClientKotlin and is published to to https://github.com/vopenia-io/pod-repo
+
+Future version should be able to get rid of this using directly the SPM support from projects such as [https://github.com/frankois944/spm4Kmp](https://github.com/frankois944/spm4Kmp)
+
 ### LiveKit configurations
 
 Set the given keys to your ~/.gradle/gradle.properties file (or create it) :
