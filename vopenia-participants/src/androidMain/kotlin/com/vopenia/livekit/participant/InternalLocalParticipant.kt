@@ -9,12 +9,15 @@ import com.vopenia.livekit.participant.track.local.LocalNoneTrack
 import com.vopenia.livekit.participant.track.local.LocalTrack
 import com.vopenia.livekit.participant.track.local.LocalTrackPublication
 import com.vopenia.livekit.participant.track.local.LocalVideoTrack
+import com.vopenia.livekit.participant.track.toLocalTranscriptionSegment
+import com.vopenia.livekit.participant.transcription.TranscriptionSegment
 import com.vopenia.livekit.permissions.Permission
 import com.vopenia.livekit.permissions.PermissionsController
 import com.vopenia.sdk.utils.Log
 import io.livekit.android.events.ParticipantEvent
 import io.livekit.android.events.collect
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import io.livekit.android.room.participant.LocalParticipant as LP
@@ -30,6 +33,7 @@ class InternalLocalParticipant(
             } ?: ParticipantPermissions()
         )
     )
+    override val transcriptsFlow = MutableSharedFlow<TranscriptionSegment>()
 
     override val identity = localParticipant.identity?.value
 
@@ -139,7 +143,9 @@ class InternalLocalParticipant(
                     }
 
                     is ParticipantEvent.TranscriptionReceived -> {
-                        // TODO
+                        it.transcriptions.forEach { transcript ->
+                            transcriptsFlow.emit(transcript.toLocalTranscriptionSegment())
+                        }
                     }
                 }
             }

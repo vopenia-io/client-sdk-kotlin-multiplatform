@@ -1,8 +1,8 @@
 package com.vopenia.livekit.participant
 
-import LiveKitClient.addDelegate
 import LiveKitClient.setCameraWithEnabled
 import LiveKitClient.setMicrophoneWithEnabled
+import LiveKitClientKotlin.DelegateKotlin
 import com.vopenia.livekit.NSErrorException
 import com.vopenia.livekit.participant.delegate.LocalParticipantDelegate
 import com.vopenia.livekit.participant.local.LocalParticipant
@@ -14,11 +14,13 @@ import com.vopenia.livekit.participant.track.local.LocalNoneTrack
 import com.vopenia.livekit.participant.track.local.LocalTrack
 import com.vopenia.livekit.participant.track.local.LocalTrackPublication
 import com.vopenia.livekit.participant.track.local.LocalVideoTrack
+import com.vopenia.livekit.participant.transcription.TranscriptionSegment
 import com.vopenia.livekit.permissions.Permission
 import com.vopenia.livekit.permissions.PermissionsController
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -38,6 +40,8 @@ class InternalLocalParticipant(
             ).toMultiplatform()
         )
     )
+
+    override val transcriptsFlow = MutableSharedFlow<TranscriptionSegment>()
 
     override val identity = localParticipant.identity()?.stringValue()
 
@@ -97,6 +101,9 @@ class InternalLocalParticipant(
 
                 wrapper.setMuted(isMuted)
                 if (new) append(wrapper)
+            },
+            onTranscriptionSegmentsReceived = { segments ->
+                segments.forEach { transcriptsFlow.tryEmit(it) }
             }
         )
     )

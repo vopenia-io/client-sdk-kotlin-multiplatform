@@ -6,8 +6,10 @@ import com.vopenia.livekit.participant.InternalRemoteParticipant
 import com.vopenia.livekit.participant.local.LocalParticipant
 import com.vopenia.livekit.participant.remote.RemoteParticipant
 import io.livekit.android.LiveKit
+import io.livekit.android.annotations.Beta
 import io.livekit.android.events.RoomEvent
 import io.livekit.android.renderer.TextureViewRenderer
+import io.livekit.android.room.types.TranscriptionSegment
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -44,6 +46,7 @@ internal actual class InternalRoom actual constructor(
         room.localParticipant.setMicrophoneEnabled(true)
     }
 
+    @OptIn(Beta::class)
     private fun collect() = scope.launch {
         room.events.events.collect {
             when (it) {
@@ -77,6 +80,8 @@ internal actual class InternalRoom actual constructor(
                 // is RoomEvent.TrackUnmuted -> TODO()
                 // is RoomEvent.TrackUnpublished -> TODO()
                 // is RoomEvent.TrackUnsubscribed -> TODO()
+                // is RoomEvent.TranscriptionReceived -> TODO()
+
                 else -> {
                     // nothing
                 }

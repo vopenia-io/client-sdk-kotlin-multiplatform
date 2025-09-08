@@ -9,6 +9,8 @@ import com.vopenia.livekit.participant.track.RemoteNoneTrack
 import com.vopenia.livekit.participant.track.RemoteTrack
 import com.vopenia.livekit.participant.track.RemoteVideoTrack
 import com.vopenia.livekit.participant.track.kindFrom
+import com.vopenia.livekit.participant.track.toLocalTranscriptionSegment
+import com.vopenia.livekit.participant.transcription.TranscriptionSegment
 import io.livekit.android.events.ParticipantEvent
 import io.livekit.android.events.collect
 import io.livekit.android.room.track.RemoteTrackPublication
@@ -16,6 +18,7 @@ import io.livekit.android.room.track.Track
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import io.livekit.android.room.participant.RemoteParticipant as RP
 
@@ -204,7 +207,9 @@ class InternalRemoteParticipant(
                     }
 
                     is ParticipantEvent.TranscriptionReceived -> {
-                        // TODO
+                        it.transcriptions.forEach { transcript ->
+                            transcriptsFlow.emit(transcript.toLocalTranscriptionSegment())
+                        }
                     }
                 }
             }

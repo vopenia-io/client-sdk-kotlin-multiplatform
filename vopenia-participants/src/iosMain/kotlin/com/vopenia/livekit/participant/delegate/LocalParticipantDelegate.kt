@@ -7,9 +7,11 @@ import LiveKitClient.Participant
 import LiveKitClient.ParticipantDelegateProtocol
 import LiveKitClient.ParticipantPermissions
 import LiveKitClient.TrackPublication
+import LiveKitClient.TranscriptionSegment
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.ObjCSignatureOverride
 import platform.darwin.NSObject
+import com.vopenia.livekit.participant.transcription.TranscriptionSegment as TS
 
 @OptIn(ExperimentalForeignApi::class)
 class LocalParticipantDelegate(
@@ -20,7 +22,8 @@ class LocalParticipantDelegate(
     private val onIsSpeaking: (Boolean) -> Unit,
     private val onMetadataUpdated: (String?) -> Unit,
     private val onNameUpdated: (String?) -> Unit,
-    private val onPermissionsUpdated: (ParticipantPermissions) -> Unit
+    private val onPermissionsUpdated: (ParticipantPermissions) -> Unit,
+    private val onTranscriptionSegmentsReceived: (List<TS>) -> Unit
 ) : ParticipantDelegateProtocol, NSObject() {
     override fun participant(
         participant: Participant,
@@ -38,6 +41,23 @@ class LocalParticipantDelegate(
     ) {
         onTrackPublished(didPublishTrack)
     }
+
+    /*@Suppress("CONFLICTING_OVERLOADS", "PARAMETER_NAME_CHANGED_ON_OVERRIDE")
+    override fun participant(
+        participant: participant,
+        trackPublication: TrackPublication,
+        didReceiveTranscriptionSegments: List<TranscriptionSegment>
+    ) {
+        onTranscriptionSegmentsReceived(
+            didReceiveTranscriptionSegments.map {
+                TS(
+                    id = it.id,
+                    transient = it.transient,
+                    text = it.text
+                )
+            }
+        )
+    }*/
 
     @Suppress("CONFLICTING_OVERLOADS", "PARAMETER_NAME_CHANGED_ON_OVERRIDE")
     @ObjCSignatureOverride

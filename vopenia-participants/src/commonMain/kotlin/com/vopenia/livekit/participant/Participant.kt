@@ -1,10 +1,14 @@
 package com.vopenia.livekit.participant
 
 import com.vopenia.livekit.participant.track.SubTrack
+import com.vopenia.livekit.participant.transcription.TranscriptionSegment
 import com.vopenia.sdk.utils.map
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
@@ -28,6 +32,8 @@ abstract class Participant<
 
     internal abstract val stateFlow: MutableStateFlow<S>
 
+    internal abstract val transcriptsFlow: MutableSharedFlow<TranscriptionSegment>
+
     abstract val identity: String?
 
     override fun equals(other: Any?): Boolean {
@@ -40,6 +46,9 @@ abstract class Participant<
 
     val state: StateFlow<S>
         get() = stateFlow.asStateFlow()
+
+    val transcripts: SharedFlow<TranscriptionSegment>
+        get() = transcriptsFlow.asSharedFlow()
 
     val isSpeakingState: StateFlow<Boolean>
         get() = isSpeakingFlow.asStateFlow()

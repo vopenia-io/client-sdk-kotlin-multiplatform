@@ -5,7 +5,9 @@ import com.vopenia.livekit.participant.local.LocalParticipantState
 import com.vopenia.livekit.participant.track.local.LocalAudioTrack
 import com.vopenia.livekit.participant.track.local.LocalTrack
 import com.vopenia.livekit.participant.track.local.LocalVideoTrack
+import com.vopenia.livekit.participant.transcription.TranscriptionSegment
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 
 class InternalLocalParticipant(
@@ -16,6 +18,7 @@ class InternalLocalParticipant(
             permissions = ParticipantPermissions()
         )
     )
+    override val transcriptsFlow = MutableSharedFlow<TranscriptionSegment>()
 
     override val identity: String?
         get() = "Not yet implemented"
