@@ -5,7 +5,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.core.view.WindowCompat
 import androidx.fragment.app.FragmentActivity
-import com.vopenia.sdk.PermissionsActivityController
+import com.vopenia.livekit.PermissionsActivityController
 import io.vopenia.app.App
 import io.vopenia.app.AppBackPressProvider
 import moe.tlaster.precompose.lifecycle.setContent
