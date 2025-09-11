@@ -1,16 +1,55 @@
 PODS:
+  - DequeModule (1.1.4):
+    - InternalCollectionsUtilities (= 1.1.4)
+  - InternalCollectionsUtilities (1.1.4)
+  - LiveKitClient (2.6.0):
+    - DequeModule (= 1.1.4)
+    - LiveKitWebRTC (= 125.6422.29)
+    - Logging (= 1.5.4)
+    - OrderedCollections (= 1.1.4)
+    - SwiftProtobuf
+  - LiveKitClientKotlin (2.6.0):
+    - LiveKitClient (= 2.6.0)
+  - LiveKitWebRTC (125.6422.29)
+  - Logging (1.5.4)
+  - OrderedCollections (1.1.4):
+    - InternalCollectionsUtilities (= 1.1.4)
   - shared (1.0)
+  - SwiftProtobuf (1.31.0)
 
 DEPENDENCIES:
+  - LiveKitClient
+  - LiveKitClientKotlin
   - shared (from `../shared`)
+
+SPEC REPOS:
+  https://github.com/livekit/podspecs:
+    - DequeModule
+    - InternalCollectionsUtilities
+    - LiveKitClient
+    - LiveKitWebRTC
+    - Logging
+    - OrderedCollections
+  https://github.com/vopenia-io/pod-repo:
+    - LiveKitClientKotlin
+  trunk:
+    - SwiftProtobuf
 
 EXTERNAL SOURCES:
   shared:
     :path: "../shared"
 
 SPEC CHECKSUMS:
+  DequeModule: 646e2f186357734310ba696172d271f0988d3fb8
+  InternalCollectionsUtilities: c32aa362a8455b73c93cc941ac98f50c4e25ed0c
+  LiveKitClient: ad2b3e37118ee7fd0eb215dc26c226b94c78ed2e
+  LiveKitClientKotlin: d281a55422293938564efae577b2c03b378ce55b
+  LiveKitWebRTC: c0c768aac64553fefae3a8d7a7f354b081d9635d
+  Logging: b2531e476d82e63f657fc610379691ae44daa9f2
+  OrderedCollections: 68f29db2e771b704400ee1078ea34ef98a38e01f
   shared: 476f8f613e223c690e3b4311f65291534e4fa034
+  SwiftProtobuf: caa61117d9a5eeb60a52375f6685991a1fd4bd7b
 
-PODFILE CHECKSUM: 01fac1ea866c088489e3a5aabd9221981649d552
+PODFILE CHECKSUM: ce190c8e0db8d37e8aa2472c60269b737ed376e3
 
 COCOAPODS: 1.16.2

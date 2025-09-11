@@ -53,3 +53,4 @@ Just like previous keys, use `VOPENIA_APP_DISTRIBUTION_APP_ID` & set the credent
 - Install the HotPreview plugin into IntelliJ/Android
 - restart
 - done
+- for iOS, don't forget to add `kotlin.apple.cocoapods.bin=/location/to/pod` in the local.properties 

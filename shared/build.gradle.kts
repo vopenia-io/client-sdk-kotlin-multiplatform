@@ -1,4 +1,7 @@
+@file:OptIn(ExperimentalKotlinGradlePluginApi::class)
+
 import com.codingfeline.buildkonfig.compiler.FieldSpec
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 
 plugins {
     alias(additionals.plugins.kotlin.multiplatform)
@@ -30,7 +33,14 @@ kotlin {
             baseName = "shared"
             isStatic = true
             transitiveExport = true
+            //linkerOpts("-ld_classic")
         }
+        /*
+        // sentry is disabled for now
+        pod("Sentry") {
+            extraOpts += listOf("-compiler-option", "-fmodules")
+        }
+         */
     }
 
     sourceSets {
@@ -54,7 +64,7 @@ kotlin {
             api(additionals.multiplatform.http.client)
             api(additionals.multiplatform.viewmodel)
             api(additionals.multiplatform.file.access)
-            api(additionals.multiplatform.sentry)
+            // api(additionals.multiplatform.sentry)
 
             api(additionals.hotpreview)
 
@@ -144,3 +154,17 @@ fun setIosDeploymentTarget(
 //        jvmTarget = rootProject.ext["javaVersion"] as String
 //    }
 //}
+
+kotlin {
+    // we disabled Sentry but this can still be used due to another cinterops issue
+    targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget>().all {
+        compilations["main"].cinterops.let { cinterops ->
+            if (cinterops.any { it.name == "Sentry" }) {
+                cinterops["Sentry"].extraOpts(
+                    "-compiler-option",
+                    "-DSentryMechanismMeta=SentryMechanismMetaUnavailable"
+                )
+            }
+        }
+    }
+}
