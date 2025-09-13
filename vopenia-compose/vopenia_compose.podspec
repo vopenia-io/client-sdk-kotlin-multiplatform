@@ -1,16 +1,15 @@
 Pod::Spec.new do |spec|
     spec.name                     = 'vopenia_compose'
-    spec.version                  = '1.0'
-    spec.homepage                 = 'Link to the Shared Module homepage'
+    spec.version                  = '0.0.9-alpha4'
+    spec.homepage                 = ''
     spec.source                   = { :http=> ''}
     spec.authors                  = ''
     spec.license                  = ''
-    spec.summary                  = 'UI Compose library for vopanie'
+    spec.summary                  = ''
     spec.vendored_frameworks      = 'build/cocoapods/framework/vopenia_compose.framework'
     spec.libraries                = 'c++'
-    spec.ios.deployment_target    = '16.0'
-    spec.osx.deployment_target    = '16.0'
-    spec.dependency 'LiveKitClientKotlin', '2.6.0'
+                
+                
                 
     if !Dir.exist?('build/cocoapods/framework/vopenia_compose.framework') || Dir.empty?('build/cocoapods/framework/vopenia_compose.framework')
         raise "

@@ -6,8 +6,8 @@ target 'appIos' do
   use_frameworks!
   platform :ios, '16.0'
   pod 'shared', :path => '../shared'
-  pod 'LiveKitClient'
-  pod 'LiveKitClientKotlin'
+  pod 'LiveKitClient', '2.6.0'
+  pod 'LiveKitClientKotlin', '2.6.0'
 
   post_install do |installer|
     installer.pods_project.targets.each do |target|

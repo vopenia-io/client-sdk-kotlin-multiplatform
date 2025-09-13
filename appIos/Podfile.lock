@@ -18,8 +18,8 @@ PODS:
   - SwiftProtobuf (1.31.0)
 
 DEPENDENCIES:
-  - LiveKitClient
-  - LiveKitClientKotlin
+  - LiveKitClient (= 2.6.0)
+  - LiveKitClientKotlin (= 2.6.0)
   - shared (from `../shared`)
 
 SPEC REPOS:
@@ -50,6 +50,6 @@ SPEC CHECKSUMS:
   shared: 476f8f613e223c690e3b4311f65291534e4fa034
   SwiftProtobuf: caa61117d9a5eeb60a52375f6685991a1fd4bd7b
 
-PODFILE CHECKSUM: ce190c8e0db8d37e8aa2472c60269b737ed376e3
+PODFILE CHECKSUM: 1b9d57cc45160d01d92f088ad64163909da75afb
 
 COCOAPODS: 1.16.2

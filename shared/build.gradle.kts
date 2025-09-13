@@ -31,8 +31,8 @@ kotlin {
         podfile = project.file("../appIos/Podfile")
         framework {
             baseName = "shared"
-            isStatic = true
-            transitiveExport = true
+            isStatic = false
+            // transitiveExport = true
             //linkerOpts("-ld_classic")
         }
         /*
@@ -64,7 +64,7 @@ kotlin {
             api(additionals.multiplatform.http.client)
             api(additionals.multiplatform.viewmodel)
             api(additionals.multiplatform.file.access)
-            // api(additionals.multiplatform.sentry)
+            api(additionals.multiplatform.sentry)
 
             api(additionals.hotpreview)
 

@@ -39,12 +39,12 @@ kotlin {
         ios.deploymentTarget = "16.0"
         osx.deploymentTarget = "16.0"
         framework {
-            baseName = "vopenia"
-            isStatic = false
-            transitiveExport = true
+            baseName = "vopenia-participants"
+            // transitiveExport = true
         }
 
         pod("LiveKitClient") {
+            version = "2.6.0"
             moduleName = "LiveKitClient"
             packageName = "LiveKitClient"
             extraOpts += listOf("-compiler-option", "-fmodules")

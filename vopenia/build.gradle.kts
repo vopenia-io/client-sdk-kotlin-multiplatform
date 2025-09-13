@@ -39,9 +39,9 @@ kotlin {
         ios.deploymentTarget = "16.0"
         osx.deploymentTarget = "16.0"
         framework {
-            baseName = "vopenia-participants"
-            isStatic = false
-            transitiveExport = true
+            baseName = "vopenia"
+            //isStatic = false
+            //transitiveExport = true
         }
 
         pod("LiveKitClientKotlin") {
