@@ -58,6 +58,7 @@ actual sealed class RemoteTrack(
     }
 }
 
+@ExperimentalForeignApi
 fun kindFrom(value: TrackKind) = when (value) {
     0L -> Kind.Audio
     1L -> Kind.Video
@@ -65,6 +66,7 @@ fun kindFrom(value: TrackKind) = when (value) {
 }
 
 @Suppress("MagicNumber")
+@ExperimentalForeignApi
 fun sourceFrom(value: TrackSource) = when (value) {
     0L -> Source.UNKNOWN // case unknown
     1L -> Source.CAMERA // case camera

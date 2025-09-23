@@ -11,6 +11,7 @@ import LiveKitClient.TrackPublication
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.ObjCSignatureOverride
 import platform.darwin.NSObject
+import com.vopenia.livekit.participant.track.StreamState as KotlinStreamState
 
 @Suppress("LongParameterList")
 @OptIn(ExperimentalForeignApi::class)
@@ -25,7 +26,8 @@ class RemoteParticipantDelegate(
     private val onIsSpeaking: (Boolean) -> Unit,
     private val onMetadataUpdated: (String?) -> Unit,
     private val onNameUpdated: (String?) -> Unit,
-    private val onPermissionsUpdated: (ParticipantPermissions) -> Unit
+    private val onPermissionsUpdated: (ParticipantPermissions) -> Unit,
+    private val onTrackStreamStateChanged: (RemoteTrackPublication, KotlinStreamState) -> Unit
 ) : ParticipantDelegateProtocol, NSObject() {
     @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
     @ObjCSignatureOverride
@@ -76,7 +78,9 @@ class RemoteParticipantDelegate(
         trackPublication: RemoteTrackPublication,
         didUpdateStreamState: StreamState
     ) {
-        // onTrackPublished or unpublished?
+        val streamState = KotlinStreamState.fromNSInteger(didUpdateStreamState)
+
+        onTrackStreamStateChanged(trackPublication, streamState!!)
     }
 
     override fun participant(

@@ -11,6 +11,7 @@ import com.vopenia.livekit.participant.track.RemoteNoneTrack
 import com.vopenia.livekit.participant.track.RemoteTrack
 import com.vopenia.livekit.participant.track.RemoteTrackPublication
 import com.vopenia.livekit.participant.track.RemoteVideoTrack
+import com.vopenia.livekit.participant.track.StreamState
 import com.vopenia.livekit.participant.track.kindFrom
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.CoroutineScope
@@ -112,6 +113,12 @@ class InternalRemoteParticipant(
                 val (wrapper, new) = getOrCreate(track)
 
                 wrapper.setSubscribed(false)
+                if (new) append(wrapper)
+            },
+            onTrackStreamStateChanged = { trackPublication, streamState ->
+                val (wrapper, new) = getOrCreate(trackPublication)
+
+                wrapper.setActive(streamState == StreamState.Active)
                 if (new) append(wrapper)
             }
         )
