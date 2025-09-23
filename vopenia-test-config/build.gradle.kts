@@ -8,13 +8,11 @@ plugins {
 }
 
 kotlin {
-    androidTarget {
-        compilations.all {
-            kotlinOptions {
-                jvmTarget = rootProject.ext["javaVersion"] as String
-            }
+    androidTarget() /* {
+        compilerOptions {
+            // jvmTarget.set(JvmTarget.JVM_11)
         }
-    }
+    } */
     jvm()
     iosX64()
     iosArm64()

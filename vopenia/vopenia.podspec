@@ -1,24 +1,24 @@
 Pod::Spec.new do |spec|
-    spec.name                     = 'vopenia_compose'
+    spec.name                     = 'vopenia'
     spec.version                  = '1.0'
     spec.homepage                 = 'Link to the Shared Module homepage'
     spec.source                   = { :http=> ''}
     spec.authors                  = ''
     spec.license                  = ''
-    spec.summary                  = 'UI Compose library for vopanie'
-    spec.vendored_frameworks      = 'build/cocoapods/framework/vopenia_compose.framework'
+    spec.summary                  = 'Some description for the Shared Module'
+    spec.vendored_frameworks      = 'build/cocoapods/framework/vopenia.framework'
     spec.libraries                = 'c++'
     spec.ios.deployment_target    = '16.0'
     spec.osx.deployment_target    = '16.0'
     spec.dependency 'LiveKitClientKotlin', '2.6.0'
                 
-    if !Dir.exist?('build/cocoapods/framework/vopenia_compose.framework') || Dir.empty?('build/cocoapods/framework/vopenia_compose.framework')
+    if !Dir.exist?('build/cocoapods/framework/vopenia.framework') || Dir.empty?('build/cocoapods/framework/vopenia.framework')
         raise "
 
-        Kotlin framework 'vopenia_compose' doesn't exist yet, so a proper Xcode project can't be generated.
+        Kotlin framework 'vopenia' doesn't exist yet, so a proper Xcode project can't be generated.
         'pod install' should be executed after running ':generateDummyFramework' Gradle task:
 
-            ./gradlew :vopenia-compose:generateDummyFramework
+            ./gradlew :vopenia:generateDummyFramework
 
         Alternatively, proper pod installation is performed during Gradle sync in the IDE (if Podfile location is set)"
     end
@@ -28,13 +28,13 @@ Pod::Spec.new do |spec|
     }
                 
     spec.pod_target_xcconfig = {
-        'KOTLIN_PROJECT_PATH' => ':vopenia-compose',
-        'PRODUCT_MODULE_NAME' => 'vopenia_compose',
+        'KOTLIN_PROJECT_PATH' => ':vopenia',
+        'PRODUCT_MODULE_NAME' => 'vopenia',
     }
                 
     spec.script_phases = [
         {
-            :name => 'Build vopenia_compose',
+            :name => 'Build vopenia',
             :execution_position => :before_compile,
             :shell_path => '/bin/sh',
             :script => <<-SCRIPT
@@ -51,5 +51,5 @@ Pod::Spec.new do |spec|
             SCRIPT
         }
     ]
-    spec.resources = ['build/compose/cocoapods/compose-resources']
+                
 end
