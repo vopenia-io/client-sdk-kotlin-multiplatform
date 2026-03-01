@@ -44,6 +44,13 @@ kotlin {
             //transitiveExport = true
         }
 
+        pod("LiveKitClient") {
+            version = "2.6.0"
+            moduleName = "LiveKitClient"
+            packageName = "LiveKitClient"
+            extraOpts += listOf("-compiler-option", "-fmodules")
+        }
+
         pod("LiveKitClientKotlin") {
             version = "2.6.0"
             moduleName = "LiveKitClientKotlin"
