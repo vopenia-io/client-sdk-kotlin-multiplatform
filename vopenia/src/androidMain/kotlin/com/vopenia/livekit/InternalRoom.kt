@@ -39,6 +39,9 @@ internal actual class InternalRoom actual constructor(
         // nothing for now
         collect()
 
+        // first we reset the connection state
+        connectionStateEmitter.emit(ConnectionState.Connecting)
+
         room.connect(url, token)
 
         room.remoteParticipants.values.forEach { onParticipantConnected(it) }
