@@ -7,7 +7,7 @@ def versionProps = new Properties()
 new File(parentDir, "../version.properties").withInputStream { versionProps.load(it) }
 
 def defaultVersion = versionProps.getProperty("version")
-def defaultGroup = "io.vopenia"
+def defaultGroup = "eu.codlab"
 
 def propSuffix = { prefix, suffixKeyName ->
     return rootProject.properties.containsKey(suffixKeyName)
