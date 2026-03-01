@@ -9,7 +9,6 @@ import io.livekit.android.LiveKit
 import io.livekit.android.annotations.Beta
 import io.livekit.android.events.RoomEvent
 import io.livekit.android.renderer.TextureViewRenderer
-import io.livekit.android.room.types.TranscriptionSegment
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -35,7 +34,7 @@ internal actual class InternalRoom actual constructor(
 
     actual val remoteParticipants: StateFlow<List<RemoteParticipant>> = participants.asStateFlow()
 
-    actual suspend fun connect(url: String, token: String) {
+    actual suspend fun connect(url: String, token: String, enableMicrophone: Boolean) {
         // nothing for now
         collect()
 
@@ -46,7 +45,9 @@ internal actual class InternalRoom actual constructor(
 
         room.remoteParticipants.values.forEach { onParticipantConnected(it) }
 
-        room.localParticipant.setMicrophoneEnabled(true)
+        if (enableMicrophone) {
+            room.localParticipant.setMicrophoneEnabled(true)
+        }
     }
 
     @OptIn(Beta::class)

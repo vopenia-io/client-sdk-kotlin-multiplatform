@@ -15,7 +15,7 @@ internal expect class InternalRoom(
 
     val remoteParticipants: StateFlow<List<RemoteParticipant>>
 
-    suspend fun connect(url: String, token: String)
+    suspend fun connect(url: String, token: String, enableMicrophone: Boolean = true)
 
     fun disconnect()
 }

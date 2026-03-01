@@ -38,6 +38,7 @@ class RoomDelegate(
     suspend fun connectWithUrl(
         url: String,
         token: String,
+        enableMicrophone: Boolean
     ) {
         suspendCoroutine { continuation ->
             room.connectWithUrl(
@@ -56,7 +57,9 @@ class RoomDelegate(
 
         room.remoteParticipants().values.forEach { onParticipantConnected(it as RemoteParticipant) }
 
-        localParticipant.enableMicrophone(true)
+        if(enableMicrophone) {
+            localParticipant.enableMicrophone(true)
+        }
     }
 
     private val delegates: List<RoomDelegateProtocol> = listOf(

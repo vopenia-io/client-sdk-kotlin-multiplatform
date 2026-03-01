@@ -23,11 +23,12 @@ internal actual class InternalRoom actual constructor(
     actual suspend fun connect(
         url: String,
         token: String,
+        enableMicrophone: Boolean
     ) {
         // first we reset the connection state
         connectionStateEmitter.emit(ConnectionState.Connecting)
 
-        roomDelegate.connectWithUrl(url, token)
+        roomDelegate.connectWithUrl(url, token, enableMicrophone)
     }
 
     actual fun disconnect() {

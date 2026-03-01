@@ -34,6 +34,7 @@ class Room {
     suspend fun connect(
         url: String,
         token: String,
+        enableMicrophone: Boolean = true
     ) {
         if (!PermissionsController.isGranted(Permission.RECORD_AUDIO)) {
             PermissionsController.providePermission(Permission.RECORD_AUDIO)
@@ -43,7 +44,7 @@ class Room {
             throw PermissionRefused(Permission.RECORD_AUDIO)
         }
 
-        internalRoom.connect(url, token)
+        internalRoom.connect(url, token, enableMicrophone)
     }
 
     fun disconnect() {

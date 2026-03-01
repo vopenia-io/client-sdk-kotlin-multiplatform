@@ -14,7 +14,7 @@ internal actual class InternalRoom actual constructor(
     private val scope: CoroutineScope,
     private val connectionStateEmitter: MutableStateFlow<ConnectionState>
 ) {
-    actual suspend fun connect(url: String, token: String) {
+    actual suspend fun connect(url: String, token: String, enableMicrophone: Boolean) {
         // nothing for now
     }
 
