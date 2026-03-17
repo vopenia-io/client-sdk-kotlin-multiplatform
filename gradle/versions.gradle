@@ -7,7 +7,7 @@ def versionProps = new Properties()
 new File(parentDir, "../version.properties").withInputStream { versionProps.load(it) }
 
 def defaultVersion = versionProps.getProperty("version")
-def defaultGroup = "eu.codlab"
+def defaultGroup = "io.vopenia"
 
 def propSuffix = { prefix, suffixKeyName ->
     return rootProject.properties.containsKey(suffixKeyName)
@@ -17,7 +17,7 @@ def propSuffix = { prefix, suffixKeyName ->
 ext {
     sampleNamespaceShared = "io.vopenia.shared"
     sampleNamespaceApp = "io.vopenia.app"
-    namespace = "com.vopenia.sdk"
+    namespace = "io.vopenia.sdk"
     javaVersion = "17"
     javaVersionObject = JavaVersion.VERSION_17
 

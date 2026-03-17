@@ -103,7 +103,7 @@ buildkonfig {
         buildConfigField(
             FieldSpec.Type.STRING,
             "VERSION",
-            rootProject.ext["version"] as String,
+            rootProject.ext["version"].toString(),
             nullable = false,
             const = true
         )

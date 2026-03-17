@@ -1,8 +1,8 @@
 package io.vopenia.app.content.pages.room
 
-import com.vopenia.livekit.participant.track.Source
-import com.vopenia.livekit.participant.track.local.LocalTrack
-import com.vopenia.sdk.utils.Log
+import io.vopenia.livekit.participant.track.Source
+import io.vopenia.livekit.participant.track.local.LocalTrack
+import io.vopenia.sdk.utils.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
