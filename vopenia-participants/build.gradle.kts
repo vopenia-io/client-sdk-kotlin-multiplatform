@@ -25,6 +25,7 @@ kotlin {
             framework {
                 //transitiveExport = true
                 baseName = "KotlinLibrary"
+                isStatic = true
             }
         }
     }
