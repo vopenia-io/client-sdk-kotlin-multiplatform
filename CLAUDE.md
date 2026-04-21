@@ -21,9 +21,20 @@ Vopenia's Kotlin Multiplatform SDK wrapping LiveKit for Android, JVM, and iOS. G
 ./scripts/androidDistribution.sh           # assemble & upload via Firebase App Distribution
 ```
 
-iOS builds go through CocoaPods in `appIos/` (open `appIos.xcworkspace`). Run `pod install` there after changing any `cocoapods {}` block in a Gradle module. `appIos` requires `kotlin.apple.cocoapods.bin=/path/to/pod` in `local.properties`.
+iOS builds go through CocoaPods in `appIos/` (open `appIos.xcworkspace`). Run `pod install` there after changing any `cocoapods {}` block in a Gradle module.
 
-Required `~/.gradle/gradle.properties` keys for full build/test/publish: `TEST_CONFIG_LIVEKIT_URL`, `TEST_CONFIG_LIVEKIT_API_KEY`, `TEST_CONFIG_LIVEKIT_API_SECRET`, `VOPENIA_SAMPLE_APP_TOKEN_ENDPOINT`, `VOPENIA_STORE_FILE`/`STORE_PASSWORD`/`KEY_ALIAS`/`KEY_PASSWORD`, `VOPENIA_APP_DISTRIBUTION_APP_ID`. Also drop `google-services.json` into `appAndroid/` and `vopenia-service-crendentials.json` into `androidApp/` for distribution.
+### Local configuration (per-machine, not committed)
+
+In `local.properties` at the repo root, set both:
+- `sdk.dir=/path/to/Android/sdk` — Android SDK location.
+- `kotlin.apple.cocoapods.bin=/path/to/pod` — required for the iOS CocoaPods integration to resolve the `pod` binary (typical: `/opt/homebrew/bin/pod` or `/usr/local/bin/pod`).
+
+In `~/.gradle/gradle.properties`, set the LiveKit test config and the signing/distribution secrets: `TEST_CONFIG_LIVEKIT_URL`, `TEST_CONFIG_LIVEKIT_API_KEY`, `TEST_CONFIG_LIVEKIT_API_SECRET`, `VOPENIA_SAMPLE_APP_TOKEN_ENDPOINT`, `VOPENIA_STORE_FILE`, `VOPENIA_STORE_PASSWORD`, `VOPENIA_KEY_ALIAS`, `VOPENIA_KEY_PASSWORD`, `VOPENIA_APP_DISTRIBUTION_APP_ID`.
+
+Drop the following files into `appAndroid/` (all resolved relative to `appAndroid/` at build time — see `appAndroid/build.gradle.kts`):
+- `google-services.json` — required by the `com.google.gms.google-services` plugin; without it the Android app won't build.
+- The release **keystore (JKS/p12)** at the path given by `VOPENIA_STORE_FILE` (that property is interpreted as a path *relative to* `appAndroid/`, e.g. `VOPENIA_STORE_FILE=vopenia-release.jks` → file at `appAndroid/vopenia-release.jks`). If the keystore is missing, signing is silently skipped and only debug builds work.
+- `vopenia-service-crendentials.json` — Firebase service-account JSON used by `firebaseAppDistribution` when uploading the release APK. If absent, the distribution block is skipped but the release build still succeeds.
 
 ## Architecture
 
