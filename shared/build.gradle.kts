@@ -56,6 +56,7 @@ kotlin {
 
             api(additionals.kotlinx.serialization.json)
 
+            api("moe.tlaster:precompose:1.7.0-alpha03")
             api(additionals.multiplatform.safearea)
             api(additionals.multiplatform.widgets.compose)
             api(additionals.multiplatform.permissions)
