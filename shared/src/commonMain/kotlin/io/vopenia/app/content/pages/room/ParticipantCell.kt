@@ -20,11 +20,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.unit.dp
-import com.vopenia.livekit.Room
-import com.vopenia.livekit.compose.ScaleType
-import com.vopenia.livekit.compose.VideoView
-import com.vopenia.livekit.participant.Participant
-import com.vopenia.livekit.participant.track.IVideoTrack
+import io.vopenia.livekit.Room
+import io.vopenia.livekit.compose.ScaleType
+import io.vopenia.livekit.compose.VideoView
+import io.vopenia.livekit.participant.Participant
+import io.vopenia.livekit.participant.track.IVideoTrack
 import de.drick.compose.hotpreview.HotPreview
 import eu.codlab.compose.theme.LocalDarkTheme
 import eu.codlab.compose.widgets.TextNormal
