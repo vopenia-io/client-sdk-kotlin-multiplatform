@@ -18,8 +18,8 @@ ext {
     sampleNamespaceShared = "io.vopenia.shared"
     sampleNamespaceApp = "io.vopenia.app"
     namespace = "com.vopenia.sdk"
-    javaVersion = "17"
-    javaVersionObject = JavaVersion.VERSION_17
+    javaVersion = "21"
+    javaVersionObject = JavaVersion.VERSION_21
 
     prop = { name, defValue ->
         return rootProject.properties.containsKey(name)
