@@ -1,6 +1,7 @@
 package io.vopenia.app.android
 
 import android.os.Bundle
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -19,6 +20,16 @@ class MainActivity : FragmentActivity() {
 
         PermissionsActivityController.setActivity(this)
 
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (!onBackPressProvider.onBackPress()) {
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                    isEnabled = true
+                }
+            }
+        })
+
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
         setContent {
@@ -30,14 +41,6 @@ class MainActivity : FragmentActivity() {
                     )
                 }
             }
-        }
-    }
-
-    @Deprecated("Deprecated in Java")
-    override fun onBackPressed() {
-        println("deprecated but called")
-        if (!onBackPressProvider.onBackPress()) {
-            super.onBackPressed()
         }
     }
 }
