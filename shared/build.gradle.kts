@@ -27,6 +27,10 @@ kotlin {
         summary = "Some description for the Shared Module"
         homepage = "Link to the Shared Module homepage"
         version = "1.0"
+        specRepos {
+            url("https://github.com/livekit/podspecs")
+            url("https://github.com/vopenia-io/pod-repo")
+        }
         ios.deploymentTarget = "16.0"
         podfile = project.file("../appIos/Podfile")
         framework {
@@ -35,12 +39,30 @@ kotlin {
             // transitiveExport = true
             //linkerOpts("-ld_classic")
         }
-        /*
-        // sentry is disabled for now
-        pod("Sentry") {
+
+        // Transitive link-only dependencies: shared.framework inherits cinterop
+        // bindings from :vopenia, so the LiveKit frameworks must be on the
+        // linker search path at framework-link time. linkOnly skips binding
+        // regeneration (requires a dynamic framework — see isStatic above).
+        pod("LiveKitClient") {
+            version = "2.6.0"
+            linkOnly = true
             extraOpts += listOf("-compiler-option", "-fmodules")
         }
-         */
+
+        pod("LiveKitClientKotlin") {
+            version = "2.6.0"
+            linkOnly = true
+            extraOpts += listOf("-compiler-option", "-fmodules")
+        }
+
+        // The kotlin-sentry klib on the classpath still embeds a cinterop
+        // reference to Sentry.framework even though runtime calls are
+        // commented out, so we need it on the linker search path.
+        pod("Sentry") {
+            linkOnly = true
+            extraOpts += listOf("-compiler-option", "-fmodules")
+        }
     }
 
     sourceSets {

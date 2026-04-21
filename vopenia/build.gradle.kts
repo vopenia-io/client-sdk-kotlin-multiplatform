@@ -24,6 +24,10 @@ kotlin {
             framework {
                 //transitiveExport = true
                 baseName = "KotlinLibrary"
+                // Static so Kotlin/Native defers LiveKit framework resolution
+                // to the final consumer — this legacy framework has no search
+                // paths for the pods declared in the cocoapods block.
+                isStatic = true
             }
         }
     }
