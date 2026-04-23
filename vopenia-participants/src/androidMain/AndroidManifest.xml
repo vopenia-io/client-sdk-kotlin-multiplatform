@@ -21,7 +21,7 @@
 
         <provider
             android:name="io.vopenia.livekit.HoldApplicationContext"
-            android:authorities="io.vopenia.livekit.HoldApplicationContext"
+            android:authorities="${applicationId}.vopenia.livekit.HoldApplicationContext"
             android:enabled="true"
             android:exported="false" />
     </application>
