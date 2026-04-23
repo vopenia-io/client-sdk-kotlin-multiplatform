@@ -150,6 +150,15 @@ class InternalLocalParticipant(
         }
     }
 
+    override suspend fun publishData(
+        data: ByteArray,
+        reliable: Boolean,
+        topic: String?,
+        destinationIdentities: List<String>?,
+    ) {
+        // not yet implemented on iOS
+    }
+
     private fun getOrCreate(
         track: LocalTrackPublication
     ): Pair<LocalTrack, Boolean> {

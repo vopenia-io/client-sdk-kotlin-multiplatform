@@ -1,6 +1,7 @@
 package io.vopenia.livekit
 
 import io.vopenia.livekit.events.ConnectionState
+import io.vopenia.livekit.participant.DataPacket
 import io.vopenia.livekit.permissions.Permission
 import io.vopenia.livekit.permissions.PermissionRefused
 import io.vopenia.livekit.permissions.PermissionsController
@@ -8,6 +9,7 @@ import io.vopenia.sdk.utils.Dispatchers
 import io.vopenia.sdk.utils.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
@@ -26,6 +28,8 @@ class Room {
     val remoteParticipants = internalRoom.remoteParticipants
 
     val localParticipant = internalRoom.localParticipant
+
+    val dataReceived: SharedFlow<DataPacket> = internalRoom.dataReceived
 
     init {
         Log.d("Room", "creating room for sdk v0.0.9-alpha4")

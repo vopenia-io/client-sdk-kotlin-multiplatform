@@ -1,6 +1,7 @@
 package io.vopenia.livekit
 
 import io.vopenia.livekit.events.ConnectionState
+import io.vopenia.livekit.participant.DataPacket
 import io.vopenia.livekit.participant.InternalLocalParticipant
 import io.vopenia.livekit.participant.InternalRemoteParticipant
 import io.vopenia.livekit.participant.local.LocalParticipant
@@ -10,8 +11,11 @@ import io.livekit.android.annotations.Beta
 import io.livekit.android.events.RoomEvent
 import io.livekit.android.renderer.TextureViewRenderer
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import io.livekit.android.room.participant.RemoteParticipant as RP
@@ -33,6 +37,10 @@ internal actual class InternalRoom actual constructor(
     private val participants = MutableStateFlow<List<InternalRemoteParticipant>>(emptyList())
 
     actual val remoteParticipants: StateFlow<List<RemoteParticipant>> = participants.asStateFlow()
+
+    private val dataReceivedEmitter = MutableSharedFlow<DataPacket>(extraBufferCapacity = 16)
+
+    actual val dataReceived: SharedFlow<DataPacket> = dataReceivedEmitter.asSharedFlow()
 
     actual suspend fun connect(url: String, token: String, enableMicrophone: Boolean) {
         // nothing for now
@@ -57,7 +65,13 @@ internal actual class InternalRoom actual constructor(
                 // is RoomEvent.ActiveSpeakersChanged -> TODO()
                 is RoomEvent.Connected -> connectionStateEmitter.emit(ConnectionState.Connected)
                 // is RoomEvent.ConnectionQualityChanged -> TODO()
-                // is RoomEvent.DataReceived -> TODO()
+                is RoomEvent.DataReceived -> dataReceivedEmitter.emit(
+                    DataPacket(
+                        data = it.data,
+                        senderIdentity = it.participant?.identity?.value,
+                        topic = it.topic,
+                    )
+                )
                 is RoomEvent.Disconnected -> connectionStateEmitter.emit(ConnectionState.Disconnected)
                 is RoomEvent.FailedToConnect -> connectionStateEmitter.emit(
                     ConnectionState.ConnectionError(

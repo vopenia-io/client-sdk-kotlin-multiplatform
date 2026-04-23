@@ -1,10 +1,12 @@
 package io.vopenia.livekit
 
 import io.vopenia.livekit.events.ConnectionState
+import io.vopenia.livekit.participant.DataPacket
 import io.vopenia.livekit.participant.local.LocalParticipant
 import io.vopenia.livekit.participant.remote.RemoteParticipant
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 
 internal expect class InternalRoom(
@@ -14,6 +16,8 @@ internal expect class InternalRoom(
     val localParticipant: LocalParticipant
 
     val remoteParticipants: StateFlow<List<RemoteParticipant>>
+
+    val dataReceived: SharedFlow<DataPacket>
 
     suspend fun connect(url: String, token: String, enableMicrophone: Boolean = true)
 

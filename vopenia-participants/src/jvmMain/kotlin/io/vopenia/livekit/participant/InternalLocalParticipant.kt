@@ -31,6 +31,15 @@ class InternalLocalParticipant(
         // not available
     }
 
+    override suspend fun publishData(
+        data: ByteArray,
+        reliable: Boolean,
+        topic: String?,
+        destinationIdentities: List<String>?,
+    ) {
+        // not available on JVM
+    }
+
     override fun filterListAudio(tracks: List<LocalTrack>): List<LocalAudioTrack> {
         return tracks.filterIsInstance<LocalAudioTrack>()
     }

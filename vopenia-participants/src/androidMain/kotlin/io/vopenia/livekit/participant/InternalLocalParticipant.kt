@@ -16,6 +16,8 @@ import io.vopenia.livekit.permissions.PermissionsController
 import io.vopenia.sdk.utils.Log
 import io.livekit.android.events.ParticipantEvent
 import io.livekit.android.events.collect
+import io.livekit.android.room.participant.Participant
+import io.livekit.android.room.track.DataPublishReliability
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -162,6 +164,20 @@ class InternalLocalParticipant(
         PermissionsController.checkOrProvide(Permission.CAMERA)
 
         localParticipant.setCameraEnabled(enabled)
+    }
+
+    override suspend fun publishData(
+        data: ByteArray,
+        reliable: Boolean,
+        topic: String?,
+        destinationIdentities: List<String>?,
+    ) {
+        localParticipant.publishData(
+            data = data,
+            reliability = if (reliable) DataPublishReliability.RELIABLE else DataPublishReliability.LOSSY,
+            topic = topic,
+            identities = destinationIdentities?.map { Participant.Identity(it) },
+        )
     }
 
     override fun filterListAudio(tracks: List<LocalTrack>): List<LocalAudioTrack> {

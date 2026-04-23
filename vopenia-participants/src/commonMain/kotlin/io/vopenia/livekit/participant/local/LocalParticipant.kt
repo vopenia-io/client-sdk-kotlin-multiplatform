@@ -12,6 +12,13 @@ abstract class LocalParticipant(scope: CoroutineScope) :
 
     abstract suspend fun enableCamera(enabled: Boolean)
 
+    abstract suspend fun publishData(
+        data: ByteArray,
+        reliable: Boolean = true,
+        topic: String? = null,
+        destinationIdentities: List<String>? = null,
+    )
+
     override fun equals(other: Any?): Boolean {
         if (other is LocalParticipant) {
             return other.identity == identity
