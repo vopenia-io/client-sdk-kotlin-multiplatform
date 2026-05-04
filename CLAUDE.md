@@ -64,3 +64,10 @@ When adding SDK surface area: add `expect` in `commonMain`, `actual` in every ta
 - `buildkonfig` generates a `VERSION` constant per SDK module from the root version.
 - CocoaPods modules patch the synthetic `project.pbxproj` in `PodInstallSyntheticTask` to force `IPHONEOS_DEPLOYMENT_TARGET = 14.1`. If you see iOS deployment-target errors after a pod change, look there first.
 - `publication` plugin publishes to Sonatype via `nexusPublishing` in the root `build.gradle`; `sonatypeUsername`/`sonatypePassword` come from `~/.gradle/gradle.properties`.
+
+## Stack upgrade blockers (verified 2026-05-04)
+
+Pinned in `gradle.properties`: Kotlin 2.3.10, AGP 8.13.2, Compose MP 1.10.3 (already latest stable). Two known blockers prevent moving to the next stable versions; re-check before any future bump.
+
+- **Kotlin 2.3.21 breaks iOS link.** `:shared:linkPodDebugFrameworkIosArm64` crashes the compiler with `IrSimpleFunctionSymbolImpl is already bound … FUN FAKE_OVERRIDE name:forwardInvocation … platform.darwin.NSObject … platform.Foundation.NSInvocation`. The faulting klib is `dev.icerock.moko:permissions-bluetooth:0.19.1`, pulled transitively by `eu.codlab:kotlin-permissions:1.17.0-alpha1` (already the newest codlab release). `kotlin.native.cacheKind=none` does NOT bypass it — the crash is in IR fake-override building, not cache build, despite the misleading "Failed to build cache" wrapper message. Android and JVM compile fine. Before retrying a Kotlin bump, verify whether `eu.codlab:kotlin-permissions` has been republished against `moko-permissions ≥ 0.20.x` (`curl -s https://repo.maven.apache.org/maven2/eu/codlab/kotlin-permissions/maven-metadata.xml`).
+- **AGP 9.2.0 needs Gradle 9.4.1+.** No AGP 8.14+ exists — the 8.x branch ended at 8.13.2. Going to AGP 9 requires bumping `gradle/wrapper/gradle-wrapper.properties` to `gradle-9.4.1-bin.zip` and absorbing the Gradle 8→9 migration (deprecated APIs removed, configuration cache stricter, plugin compatibility). Treat as a dedicated chantier, not a one-line bump.
