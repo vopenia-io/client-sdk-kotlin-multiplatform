@@ -109,7 +109,7 @@ class AppModelImpl : StateViewModel<AppModelState>(AppModelState(NavigateTo.Init
 
     @Suppress("TooGenericExceptionCaught", "SwallowedException")
     override fun initialize() {
-        launch {
+        safeLaunch {
             try {
                 val session = sessionFile.readStringIfExists()?.let {
                     return@let Json.decodeFromString<SavedSession>(it)
