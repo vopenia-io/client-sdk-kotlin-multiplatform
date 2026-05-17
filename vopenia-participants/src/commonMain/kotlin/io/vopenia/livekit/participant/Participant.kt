@@ -1,5 +1,7 @@
 package io.vopenia.livekit.participant
 
+import io.vopenia.livekit.participant.chat.ChatMessage
+import io.vopenia.livekit.participant.data.DataPacket
 import io.vopenia.livekit.participant.track.SubTrack
 import io.vopenia.livekit.participant.transcription.TranscriptionSegment
 import io.vopenia.sdk.utils.map
@@ -34,6 +36,9 @@ abstract class Participant<
 
     internal abstract val transcriptsFlow: MutableSharedFlow<TranscriptionSegment>
 
+    internal val dataReceivedFlowInternal = MutableSharedFlow<DataPacket>(extraBufferCapacity = 64)
+    internal val chatMessagesFlowInternal = MutableSharedFlow<ChatMessage>(extraBufferCapacity = 64)
+
     abstract val identity: String?
 
     override fun equals(other: Any?): Boolean {
@@ -49,6 +54,12 @@ abstract class Participant<
 
     val transcripts: SharedFlow<TranscriptionSegment>
         get() = transcriptsFlow.asSharedFlow()
+
+    val dataReceived: SharedFlow<DataPacket>
+        get() = dataReceivedFlowInternal.asSharedFlow()
+
+    val chatMessages: SharedFlow<ChatMessage>
+        get() = chatMessagesFlowInternal.asSharedFlow()
 
     val isSpeakingState: StateFlow<Boolean>
         get() = isSpeakingFlow.asStateFlow()

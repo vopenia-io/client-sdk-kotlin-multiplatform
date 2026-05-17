@@ -32,7 +32,12 @@ class RoomDelegate(
     private val participants = MutableStateFlow<List<InternalRemoteParticipant>>(emptyList())
 
     val remoteParticipants = participants.asStateFlow()
-    val localParticipant = InternalLocalParticipant(scope, room.localParticipant())
+    val localParticipant = InternalLocalParticipant(scope, room.localParticipant()).also {
+        // Register the LiveKit Text Stream chat handler now that we have a Room
+        // handle — LocalParticipant.requireRoom() is internal on the Pod so we
+        // pass the Room down explicitly here.
+        it.registerChatTextStream(room)
+    }
 
     @OptIn(ExperimentalForeignApi::class)
     suspend fun connectWithUrl(
@@ -67,10 +72,26 @@ class RoomDelegate(
             RoomDelegateConnectionState(
                 emit,
                 onParticipantConnected = { onParticipantConnected(it) },
-                onParticipantDisconnected = { onParticipantDisconnected(it) }
+                onParticipantDisconnected = { onParticipantDisconnected(it) },
+                onParticipantAttributesUpdated = { participant, attributes ->
+                    onAttributesUpdated(participant, attributes)
+                }
             )
         ),
     )
+
+    private fun onAttributesUpdated(
+        participant: LiveKitClient.Participant,
+        attributes: Map<String, String>
+    ) {
+        val identity = participant.identity()?.stringValue() ?: return
+        if (identity == localParticipant.identity) {
+            localParticipant.onAttributesUpdatedFromRoom(attributes)
+        } else {
+            participants.value.find { it.identity == identity }
+                ?.onAttributesUpdatedFromRoom(attributes)
+        }
+    }
 
     init {
         Log.d("RoomDelegate", "RoomDelegate initialization")

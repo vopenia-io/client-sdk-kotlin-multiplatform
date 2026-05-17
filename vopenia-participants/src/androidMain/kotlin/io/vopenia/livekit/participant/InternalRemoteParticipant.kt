@@ -1,6 +1,9 @@
 package io.vopenia.livekit.participant
 
 import android.util.Log
+import io.vopenia.livekit.participant.chat.ChatMessageProto
+import io.vopenia.livekit.participant.chat.ChatTopics
+import io.vopenia.livekit.participant.data.DataPacket
 import io.vopenia.livekit.participant.remote.RemoteParticipant
 import io.vopenia.livekit.participant.remote.RemoteParticipantState
 import io.vopenia.livekit.participant.track.Kind
@@ -34,7 +37,8 @@ class InternalRemoteParticipant(
         metadata = remoteParticipant.metadata,
         permissions = remoteParticipant.permissions?.let {
             InternalParticipantPermissions(it).toMultiplatform()
-        } ?: ParticipantPermissions()
+        } ?: ParticipantPermissions(),
+        attributes = remoteParticipant.attributes
     )
 ) {
     override fun filterListAudio(tracks: List<RemoteTrack>): List<RemoteAudioTrack> {
@@ -90,7 +94,7 @@ class InternalRemoteParticipant(
             remoteParticipant.events.collect {
                 when (it) {
                     is ParticipantEvent.DataReceived -> {
-                        // TODO
+                        handleDataReceived(it.data, it.topic, it.participant.identity?.value)
                     }
 
                     is ParticipantEvent.LocalTrackPublished -> {
@@ -191,7 +195,7 @@ class InternalRemoteParticipant(
                     }
 
                     is ParticipantEvent.AttributesChanged -> {
-                        // TODO
+                        stateFlow.emit(stateFlow.value.copy(attributes = remoteParticipant.attributes))
                     }
 
                     is ParticipantEvent.LocalTrackPublicationFailed -> {
@@ -213,6 +217,19 @@ class InternalRemoteParticipant(
                     }
                 }
             }
+        }
+    }
+
+    private suspend fun handleDataReceived(
+        data: ByteArray,
+        topic: String?,
+        senderIdentity: String?
+    ) {
+        dataReceivedFlowInternal.emit(DataPacket(data, topic, senderIdentity))
+        if (topic == ChatTopics.CHAT) {
+            runCatching { ChatMessageProto.decode(data, senderIdentity) }
+                .getOrNull()
+                ?.let { chatMessagesFlowInternal.emit(it) }
         }
     }
 

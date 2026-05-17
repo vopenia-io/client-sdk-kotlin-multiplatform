@@ -1,10 +1,21 @@
 package io.vopenia.livekit.participant
 
-import LiveKitClient.setCameraWithEnabled
 import LiveKitClient.setMicrophoneWithEnabled
+import LiveKitClient.setScreenShareWithEnabled
 import LiveKitClientKotlin.DelegateKotlin
+import LiveKitClientKotlin.LocalParticipantKotlin
+import io.vopenia.livekit.participant.effects.BackgroundImage
+import platform.Foundation.NSBundle
+import platform.UIKit.UIImage
 import io.vopenia.livekit.NSErrorException
+import io.vopenia.livekit.participant.chat.ChatMessage
+import io.vopenia.livekit.participant.chat.ChatMessageProto
+import io.vopenia.livekit.participant.chat.ChatTopics
+import io.vopenia.livekit.participant.data.DataPacket
 import io.vopenia.livekit.participant.delegate.LocalParticipantDelegate
+import io.vopenia.livekit.participant.devices.AudioInputDevice
+import io.vopenia.livekit.participant.devices.CameraDevice
+import io.vopenia.livekit.participant.effects.VideoEffect
 import io.vopenia.livekit.participant.local.LocalParticipant
 import io.vopenia.livekit.participant.local.LocalParticipantState
 import io.vopenia.livekit.participant.track.Kind
@@ -18,10 +29,22 @@ import io.vopenia.livekit.participant.transcription.TranscriptionSegment
 import io.vopenia.livekit.permissions.Permission
 import io.vopenia.livekit.permissions.PermissionsController
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.usePinned
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import platform.AVFoundation.AVCaptureDevicePositionBack
+import platform.AVFoundation.AVCaptureDevicePositionFront
+import platform.AVFoundation.AVCaptureDevicePositionUnspecified
+import platform.Foundation.NSData
+import platform.Foundation.NSDate
+import platform.Foundation.NSUUID
+import platform.Foundation.create
+import platform.Foundation.dataWithBytes
+import platform.Foundation.timeIntervalSince1970
+import platform.posix.memcpy
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -37,73 +60,77 @@ class InternalLocalParticipant(
         LocalParticipantState(
             permissions = InternalParticipantPermissions(
                 localParticipant.permissions()
-            ).toMultiplatform()
+            ).toMultiplatform(),
+            attributes = localParticipant.attributes() as? Map<String, String> ?: emptyMap()
         )
     )
 
     override val transcriptsFlow = MutableSharedFlow<TranscriptionSegment>()
 
-    override val identity = localParticipant.identity()?.stringValue()
+    // Lazy getter — identity is assigned by the LiveKit server during connect,
+    // which happens AFTER InternalLocalParticipant is created. A val captured at
+    // construction time stays null forever. Re-reading on every access avoids this.
+    override val identity: String?
+        get() = localParticipant.identity()?.stringValue()
+
+    // Track current camera position so switchCamera() can flip front<->back without
+    // re-querying the underlying capturer (LiveKitClient does not expose it on LocalParticipant).
+    private var currentCameraPosition: Long = AVCaptureDevicePositionFront
 
     private val delegate = delegateWrapper.wrapParticipantDelegateWithDelegate(
         LocalParticipantDelegate(
-            onConnectionQuality = { connectionQuality ->
-                // scope.async {
-                //
-                // }
-            },
+            onConnectionQuality = { _ -> },
             onIsSpeaking = { isSpeaking ->
-                println("isSpeaking $isSpeaking")
-                scope.async {
-                    isSpeakingFlow.emit(isSpeaking)
-                }
+                scope.async { isSpeakingFlow.emit(isSpeaking) }
             },
             onMetadataUpdated = { metadata ->
-                println("metadata $metadata")
-                scope.async {
-                    stateFlow.emit(stateFlow.value.copy(metadata = metadata))
-                }
+                scope.async { stateFlow.emit(stateFlow.value.copy(metadata = metadata)) }
             },
             onNameUpdated = { name ->
-                println("name $name")
-                scope.async {
-                    stateFlow.emit(stateFlow.value.copy(name = name))
-                }
+                scope.async { stateFlow.emit(stateFlow.value.copy(name = name)) }
             },
             onPermissionsUpdated = { permissions ->
-                println("permissions $permissions")
                 scope.async {
                     stateFlow.emit(
                         stateFlow.value.copy(
-                            permissions = InternalParticipantPermissions(
-                                permissions
-                            ).toMultiplatform()
+                            permissions = InternalParticipantPermissions(permissions).toMultiplatform()
                         )
                     )
                 }
             },
+            onAttributesUpdated = { attributes ->
+                scope.async {
+                    stateFlow.emit(stateFlow.value.copy(attributes = attributes))
+                }
+            },
             onTrackPublished = { track ->
-                println("onTrackPublished $track")
                 val (wrapper, new) = getOrCreate(track as LocalTrackPublication)
-
                 wrapper.setPublished(true)
                 if (new) append(wrapper)
             },
             onTrackUnpublished = { track ->
-                println("onTrackUnpublished $track")
                 val (wrapper, new) = getOrCreate(track as LocalTrackPublication)
-
                 wrapper.setPublished(false)
                 if (new) append(wrapper)
             },
             onTrackPublicationIsMuted = { track, isMuted ->
                 val (wrapper, new) = getOrCreate(track as LocalTrackPublication)
-
                 wrapper.setMuted(isMuted)
                 if (new) append(wrapper)
             },
             onTranscriptionSegmentsReceived = { segments ->
                 segments.forEach { transcriptsFlow.tryEmit(it) }
+            },
+            onDataReceived = { data, topic, senderIdentity ->
+                scope.async {
+                    val bytes = data.toByteArray()
+                    dataReceivedFlowInternal.emit(DataPacket(bytes, topic, senderIdentity))
+                    if (topic == ChatTopics.CHAT) {
+                        runCatching { ChatMessageProto.decode(bytes, senderIdentity) }
+                            .getOrNull()
+                            ?.let { chatMessagesFlowInternal.emit(it) }
+                    }
+                }
             }
         )
     )
@@ -112,48 +139,217 @@ class InternalLocalParticipant(
         delegateWrapper.appendToParticipant(localParticipant, delegate)
     }
 
-    override fun filterListAudio(tracks: List<LocalTrack>): List<LocalAudioTrack> {
-        return tracks.filterIsInstance<LocalAudioTrack>()
+    /**
+     * Called from the Room delegate when ANY participant's attributes change
+     * (including this local one). Routes the latest map into [stateFlow] so
+     * `Room.handStates` and similar observers see updates from the server
+     * — the Participant delegate alone doesn't reliably fire for the local
+     * participant on iOS.
+     */
+    fun onAttributesUpdatedFromRoom(attributes: Map<String, String>) {
+        scope.async {
+            stateFlow.emit(stateFlow.value.copy(attributes = attributes))
+        }
     }
 
-    override fun filterListVideo(tracks: List<LocalTrack>): List<LocalVideoTrack> {
-        return tracks.filterIsInstance<LocalVideoTrack>()
+    /// Register the LiveKit Text Stream handler for chat ("lk.chat" topic).
+    /// Called by [io.vopenia.livekit.RoomDelegate] after the Room is connected
+    /// — we need a direct `LiveKitClient.Room` handle, which `LocalParticipant`
+    /// doesn't expose publicly. This wires inbound chat messages from any
+    /// remote participant into the local participant's `chatMessages` flow.
+    fun registerChatTextStream(room: LiveKitClient.Room) {
+        LocalParticipantKotlin.registerChatHandlerWithRoom(room = room) { text, senderIdentity ->
+            val safeText = text ?: return@registerChatHandlerWithRoom
+            println("[CHAT-iOS] text stream received: from=$senderIdentity text=\"$safeText\"")
+            scope.async {
+                chatMessagesFlowInternal.emit(
+                    ChatMessage(
+                        id = NSUUID().UUIDString(),
+                        timestamp = (NSDate().timeIntervalSince1970() * 1000.0).toLong(),
+                        message = safeText,
+                        senderIdentity = senderIdentity
+                    )
+                )
+            }
+        }
     }
 
-    override suspend fun enableMicrophone(enabled: Boolean) {
+    override fun filterListAudio(tracks: List<LocalTrack>): List<LocalAudioTrack> =
+        tracks.filterIsInstance<LocalAudioTrack>()
+
+    override fun filterListVideo(tracks: List<LocalTrack>): List<LocalVideoTrack> =
+        tracks.filterIsInstance<LocalVideoTrack>()
+
+    override suspend fun enableMicrophone(enabled: Boolean, device: AudioInputDevice?) {
         PermissionsController.checkOrProvide(Permission.RECORD_AUDIO)
-        println("enableMicrophone $enabled")
+        // Per-device selection is not yet plumbed through AudioCaptureOptions binding.
         suspendCoroutine { continuation ->
             localParticipant.setMicrophoneWithEnabled(enabled, null, null) { _, error ->
-                // todo manage here
-                if (null != error) {
-                    continuation.resumeWithException(NSErrorException(error))
-                } else {
-                    continuation.resume(Unit)
-                }
+                if (null != error) continuation.resumeWithException(NSErrorException(error))
+                else continuation.resume(Unit)
             }
         }
     }
 
-    override suspend fun enableCamera(enabled: Boolean) {
+    override suspend fun enableCamera(enabled: Boolean, device: CameraDevice?) {
         PermissionsController.checkOrProvide(Permission.CAMERA)
-
+        val position = when {
+            device == null -> currentCameraPosition
+            device.isFront -> AVCaptureDevicePositionFront
+            else -> AVCaptureDevicePositionBack
+        }
+        currentCameraPosition = position
         suspendCoroutine { continuation ->
-            localParticipant.setCameraWithEnabled(enabled, null, null) { _, error ->
-                // todo manage here
-                if (null != error) {
-                    continuation.resumeWithException(NSErrorException(error))
-                } else {
-                    continuation.resume(Unit)
+            LocalParticipantKotlin.setCameraEnabledWithParticipant(
+                participant = localParticipant,
+                enabled = enabled,
+                position = position
+            ) { error ->
+                if (null != error) continuation.resumeWithException(NSErrorException(error))
+                else continuation.resume(Unit)
+            }
+        }
+    }
+
+    override suspend fun switchCamera() {
+        val newPosition = suspendCoroutine { continuation ->
+            LocalParticipantKotlin.switchCameraWithParticipant(localParticipant) { position, error ->
+                if (null != error) continuation.resumeWithException(NSErrorException(error))
+                else continuation.resume(position)
+            }
+        }
+        currentCameraPosition = newPosition
+    }
+
+    override suspend fun startScreenShare() {
+        suspendCoroutine { continuation ->
+            localParticipant.setScreenShareWithEnabled(true) { _, error ->
+                if (null != error) continuation.resumeWithException(NSErrorException(error))
+                else continuation.resume(Unit)
+            }
+        }
+    }
+
+    override suspend fun stopScreenShare() {
+        suspendCoroutine { continuation ->
+            localParticipant.setScreenShareWithEnabled(false) { _, error ->
+                if (null != error) continuation.resumeWithException(NSErrorException(error))
+                else continuation.resume(Unit)
+            }
+        }
+    }
+
+    override suspend fun setVideoEffect(effect: VideoEffect?) {
+        println("[EFFECT-iOS] setVideoEffect(effect=$effect)")
+        when (effect) {
+            null, VideoEffect.BlurLight, VideoEffect.BlurStrong -> {
+                val enable = effect != null
+                println("[EFFECT-iOS] calling setBackgroundBlur(enable=$enable)")
+                suspendCoroutine { continuation ->
+                    LocalParticipantKotlin.setBackgroundBlurWithParticipant(
+                        participant = localParticipant,
+                        enabled = enable
+                    ) { error ->
+                        println("[EFFECT-iOS] setBackgroundBlur completed, error=$error")
+                        if (null != error) continuation.resumeWithException(NSErrorException(error))
+                        else continuation.resume(Unit)
+                    }
+                }
+            }
+            is VideoEffect.Background -> {
+                val uiImage = loadUiImage(effect.image)
+                if (uiImage == null) {
+                    println("setVideoEffect: failed to load background image ${effect.image}")
+                    return
+                }
+                suspendCoroutine { continuation ->
+                    LocalParticipantKotlin.setBackgroundImageWithParticipant(
+                        participant = localParticipant,
+                        image = uiImage
+                    ) { error ->
+                        if (null != error) continuation.resumeWithException(NSErrorException(error))
+                        else continuation.resume(Unit)
+                    }
                 }
             }
         }
     }
 
-    private fun getOrCreate(
-        track: LocalTrackPublication
-    ): Pair<LocalTrack, Boolean> {
-        return internalTracks.value.find { it.sid == track.sid().stringValue() }.let {
+    private fun loadUiImage(image: BackgroundImage): UIImage? = when (image) {
+        is BackgroundImage.Bundled -> UIImage.imageNamed(image.name)
+        is BackgroundImage.Uri -> {
+            val raw = image.uri
+            val path = when {
+                raw.startsWith("file://") -> raw.removePrefix("file://")
+                raw.startsWith("/") -> raw
+                else -> null
+            }
+            path?.let { UIImage(contentsOfFile = it) }
+        }
+    }
+
+    override suspend fun publishData(payload: ByteArray, reliable: Boolean, topic: String?) {
+        val nsData = payload.toNSData()
+        suspendCoroutine { continuation ->
+            LocalParticipantKotlin.publishDataWithParticipant(
+                participant = localParticipant,
+                data = nsData,
+                reliable = reliable,
+                topic = topic
+            ) { error ->
+                if (null != error) continuation.resumeWithException(NSErrorException(error))
+                else continuation.resume(Unit)
+            }
+        }
+    }
+
+    override suspend fun updateAttributes(attributes: Map<String, String>) {
+        @Suppress("UNCHECKED_CAST")
+        suspendCoroutine { continuation ->
+            LocalParticipantKotlin.setAttributesWithParticipant(
+                participant = localParticipant,
+                attributes = attributes as Map<Any?, *>,
+                completionHandler = { error ->
+                    if (null != error) continuation.resumeWithException(NSErrorException(error))
+                    else continuation.resume(Unit)
+                }
+            )
+        }
+        // Don't trust the NSDictionary -> Map<String,String> cast (cinterop returns
+        // Map<Any?, *> which doesn't cleanly downcast). Merge the passed-in
+        // attributes onto our current cached state so handStates / similar
+        // StateFlow consumers see an update immediately.
+        stateFlow.emit(
+            stateFlow.value.copy(
+                attributes = stateFlow.value.attributes + attributes
+            )
+        )
+    }
+
+    override suspend fun sendChatMessage(text: String): ChatMessage {
+        // Use LiveKit Text Streams (sendText for topic "lk.chat") — the API
+        // consumed by @livekit/components-react useChat on the Meet Web side.
+        val (streamId, timestamp) = suspendCoroutine<Pair<String?, Long>> { continuation ->
+            LocalParticipantKotlin.sendChatTextWithParticipant(
+                participant = localParticipant,
+                text = text
+            ) { id, ts, error ->
+                if (null != error) continuation.resumeWithException(NSErrorException(error))
+                else continuation.resume(id to ts)
+            }
+        }
+        val message = ChatMessage(
+            id = streamId ?: NSUUID().UUIDString(),
+            timestamp = if (timestamp != 0L) timestamp else (NSDate().timeIntervalSince1970() * 1000.0).toLong(),
+            message = text,
+            senderIdentity = identity
+        )
+        chatMessagesFlowInternal.emit(message)
+        return message
+    }
+
+    private fun getOrCreate(track: LocalTrackPublication): Pair<LocalTrack, Boolean> =
+        internalTracks.value.find { it.sid == track.sid().stringValue() }.let {
             if (null != it) {
                 it.updateInternalTrack(track)
                 it to false
@@ -165,5 +361,23 @@ class InternalLocalParticipant(
                 } to true
             }
         }
+}
+
+@OptIn(ExperimentalForeignApi::class)
+internal fun NSData.toByteArray(): ByteArray {
+    val length = length.toInt()
+    if (length == 0) return ByteArray(0)
+    val bytes = ByteArray(length)
+    bytes.usePinned { pinned ->
+        memcpy(pinned.addressOf(0), this.bytes, this.length)
+    }
+    return bytes
+}
+
+@OptIn(ExperimentalForeignApi::class)
+internal fun ByteArray.toNSData(): NSData {
+    if (isEmpty()) return NSData.create(bytes = null, length = 0u)
+    return usePinned { pinned ->
+        NSData.dataWithBytes(pinned.addressOf(0), this.size.toULong())
     }
 }

@@ -2,6 +2,9 @@ package io.vopenia.livekit.participant
 
 import LiveKitClient.removeDelegate
 import LiveKitClientKotlin.DelegateKotlin
+import io.vopenia.livekit.participant.chat.ChatMessageProto
+import io.vopenia.livekit.participant.chat.ChatTopics
+import io.vopenia.livekit.participant.data.DataPacket
 import io.vopenia.livekit.participant.delegate.RemoteParticipantDelegate
 import io.vopenia.livekit.participant.remote.RemoteParticipant
 import io.vopenia.livekit.participant.remote.RemoteParticipantState
@@ -31,7 +34,8 @@ class InternalRemoteParticipant(
         metadata = remoteParticipant.metadata(),
         permissions = InternalParticipantPermissions(
             remoteParticipant.permissions()
-        ).toMultiplatform()
+        ).toMultiplatform(),
+        attributes = remoteParticipant.attributes() as? Map<String, String> ?: emptyMap()
     )
 ) {
     private val delegateWrapper = DelegateKotlin()
@@ -120,6 +124,22 @@ class InternalRemoteParticipant(
 
                 wrapper.setActive(streamState == StreamState.Active)
                 if (new) append(wrapper)
+            },
+            onAttributesUpdated = { attributes ->
+                scope.async {
+                    stateFlow.emit(stateFlow.value.copy(attributes = attributes))
+                }
+            },
+            onDataReceived = { data, topic, senderIdentity ->
+                scope.async {
+                    val bytes = data.toByteArray()
+                    dataReceivedFlowInternal.emit(DataPacket(bytes, topic, senderIdentity))
+                    if (topic == ChatTopics.CHAT) {
+                        runCatching { ChatMessageProto.decode(bytes, senderIdentity) }
+                            .getOrNull()
+                            ?.let { chatMessagesFlowInternal.emit(it) }
+                    }
+                }
             }
         )
     )
@@ -153,6 +173,18 @@ class InternalRemoteParticipant(
 
         scope.async {
             stateFlow.emit(stateFlow.value.copy(connected = false))
+        }
+    }
+
+    /**
+     * Called from the Room delegate when this remote participant's attributes
+     * change. The Participant-scoped delegate also has a hook for this, but
+     * Meet Web (and LiveKit Components) observes the Room event in practice,
+     * which is more reliable for remotes.
+     */
+    fun onAttributesUpdatedFromRoom(attributes: Map<String, String>) {
+        scope.async {
+            stateFlow.emit(stateFlow.value.copy(attributes = attributes))
         }
     }
 

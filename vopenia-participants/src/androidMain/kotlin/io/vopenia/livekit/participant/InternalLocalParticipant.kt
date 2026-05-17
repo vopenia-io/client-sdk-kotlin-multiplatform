@@ -1,7 +1,18 @@
 package io.vopenia.livekit.participant
 
+import io.vopenia.livekit.participant.chat.ChatMessage
+import io.vopenia.livekit.participant.chat.ChatMessageProto
+import io.vopenia.livekit.participant.chat.ChatTopics
+import io.vopenia.livekit.participant.data.DataPacket
+import io.vopenia.livekit.participant.devices.AudioInputDevice
+import io.vopenia.livekit.participant.devices.CameraDevice
+import io.vopenia.livekit.participant.effects.VideoEffect
+import io.vopenia.livekit.effects.VideoEffectProcessor
+import io.vopenia.livekit.effects.VideoProcessorAttacher
 import io.vopenia.livekit.participant.local.LocalParticipant
 import io.vopenia.livekit.participant.local.LocalParticipantState
+import io.vopenia.livekit.screenshare.ScreenShareController
+import io.livekit.android.room.track.screencapture.ScreenCaptureParams
 import io.vopenia.livekit.participant.track.Kind
 import io.vopenia.livekit.participant.track.kindFrom
 import io.vopenia.livekit.participant.track.local.LocalAudioTrack
@@ -16,10 +27,12 @@ import io.vopenia.livekit.permissions.PermissionsController
 import io.vopenia.sdk.utils.Log
 import io.livekit.android.events.ParticipantEvent
 import io.livekit.android.events.collect
+import io.livekit.android.room.track.DataPublishReliability
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import java.util.UUID
 import io.livekit.android.room.participant.LocalParticipant as LP
 
 class InternalLocalParticipant(
@@ -30,19 +43,23 @@ class InternalLocalParticipant(
         LocalParticipantState(
             permissions = localParticipant.permissions?.let {
                 InternalParticipantPermissions(it).toMultiplatform()
-            } ?: ParticipantPermissions()
+            } ?: ParticipantPermissions(),
+            attributes = localParticipant.attributes
         )
     )
     override val transcriptsFlow = MutableSharedFlow<TranscriptionSegment>()
 
-    override val identity = localParticipant.identity?.value
+    // Lazy getter — identity is assigned by the LiveKit server during connect,
+    // which happens AFTER InternalLocalParticipant is created.
+    override val identity: String?
+        get() = localParticipant.identity?.value
 
     init {
         scope.launch {
             localParticipant.events.collect {
                 when (it) {
                     is ParticipantEvent.DataReceived -> {
-                        // TODO
+                        handleDataReceived(it.data, it.topic, it.participant.identity?.value)
                     }
 
                     is ParticipantEvent.LocalTrackPublished -> {
@@ -127,7 +144,7 @@ class InternalLocalParticipant(
                     }
 
                     is ParticipantEvent.AttributesChanged -> {
-                        // TODO
+                        stateFlow.emit(stateFlow.value.copy(attributes = localParticipant.attributes))
                     }
 
                     is ParticipantEvent.LocalTrackPublicationFailed -> {
@@ -152,16 +169,106 @@ class InternalLocalParticipant(
         }
     }
 
-    override suspend fun enableMicrophone(enabled: Boolean) {
+    private suspend fun handleDataReceived(
+        data: ByteArray,
+        topic: String?,
+        senderIdentity: String?
+    ) {
+        dataReceivedFlowInternal.emit(DataPacket(data, topic, senderIdentity))
+        if (topic == ChatTopics.CHAT) {
+            runCatching { ChatMessageProto.decode(data, senderIdentity) }
+                .getOrNull()
+                ?.let { chatMessagesFlowInternal.emit(it) }
+        }
+    }
+
+    override suspend fun enableMicrophone(enabled: Boolean, device: AudioInputDevice?) {
         PermissionsController.checkOrProvide(Permission.RECORD_AUDIO)
-        Log.d("LocalParticipant", "enableMicrophone($enabled)")
+        Log.d("LocalParticipant", "enableMicrophone($enabled, device=${device?.id})")
+        // device selection is not yet plumbed through LiveKit's setMicrophoneEnabled —
+        // tracked as a follow-up alongside availableMicrophones().
         localParticipant.setMicrophoneEnabled(enabled)
     }
 
-    override suspend fun enableCamera(enabled: Boolean) {
+    override suspend fun enableCamera(enabled: Boolean, device: CameraDevice?) {
         PermissionsController.checkOrProvide(Permission.CAMERA)
-
         localParticipant.setCameraEnabled(enabled)
+        if (enabled && device != null) {
+            findCameraTrack()?.switchCamera(device.id, null)
+        }
+    }
+
+    override suspend fun switchCamera() {
+        findCameraTrack()?.switchCamera(null, null)
+    }
+
+    private fun findCameraTrack(): io.livekit.android.room.track.LocalVideoTrack? {
+        return localParticipant.trackPublications.values
+            .asSequence()
+            .filter { it.source == io.livekit.android.room.track.Track.Source.CAMERA }
+            .mapNotNull { it.track as? io.livekit.android.room.track.LocalVideoTrack }
+            .firstOrNull()
+    }
+
+    override suspend fun publishData(payload: ByteArray, reliable: Boolean, topic: String?) {
+        val reliability = if (reliable) DataPublishReliability.RELIABLE else DataPublishReliability.LOSSY
+        localParticipant.publishData(payload, reliability, topic, null)
+    }
+
+    override suspend fun updateAttributes(attributes: Map<String, String>) {
+        localParticipant.updateAttributes(attributes)
+        stateFlow.emit(stateFlow.value.copy(attributes = localParticipant.attributes))
+    }
+
+    override suspend fun startScreenShare() {
+        val (intent, notification, notificationId) = ScreenShareController.consume()
+            ?: throw IllegalStateException(
+                "ScreenShareController.setMediaProjectionResult(...) must be called " +
+                "with a MediaProjection result Intent before startScreenShare()."
+            )
+        localParticipant.setScreenShareEnabled(
+            true,
+            ScreenCaptureParams(intent, notificationId, notification, null)
+        )
+    }
+
+    override suspend fun stopScreenShare() {
+        localParticipant.setScreenShareEnabled(false, null)
+    }
+
+    private val videoEffectProcessor: VideoEffectProcessor by lazy { VideoEffectProcessor() }
+
+    override suspend fun setVideoEffect(effect: VideoEffect?) {
+        val cameraTrack = findCameraTrack()
+        if (cameraTrack == null) {
+            Log.d("LocalParticipant", "setVideoEffect: no camera track to attach to — start the camera first")
+            return
+        }
+        videoEffectProcessor.currentEffect = effect
+        val attached = VideoProcessorAttacher.attach(
+            cameraTrack,
+            if (effect == null) null else videoEffectProcessor
+        )
+        if (!attached) {
+            Log.d("LocalParticipant", "setVideoEffect: failed to attach processor (reflection)")
+        }
+    }
+
+    override suspend fun sendChatMessage(text: String): ChatMessage {
+        val message = ChatMessage(
+            id = UUID.randomUUID().toString(),
+            timestamp = System.currentTimeMillis(),
+            message = text,
+            senderIdentity = identity
+        )
+        localParticipant.publishData(
+            ChatMessageProto.encode(message),
+            DataPublishReliability.RELIABLE,
+            ChatTopics.CHAT,
+            null
+        )
+        chatMessagesFlowInternal.emit(message)
+        return message
     }
 
     override fun filterListAudio(tracks: List<LocalTrack>): List<LocalAudioTrack> {

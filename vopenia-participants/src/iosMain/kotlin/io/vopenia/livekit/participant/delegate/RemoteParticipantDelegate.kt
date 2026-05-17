@@ -10,6 +10,7 @@ import LiveKitClient.StreamState
 import LiveKitClient.TrackPublication
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.ObjCSignatureOverride
+import platform.Foundation.NSData
 import platform.darwin.NSObject
 import io.vopenia.livekit.participant.track.StreamState as KotlinStreamState
 
@@ -27,7 +28,9 @@ class RemoteParticipantDelegate(
     private val onMetadataUpdated: (String?) -> Unit,
     private val onNameUpdated: (String?) -> Unit,
     private val onPermissionsUpdated: (ParticipantPermissions) -> Unit,
-    private val onTrackStreamStateChanged: (RemoteTrackPublication, KotlinStreamState) -> Unit
+    private val onAttributesUpdated: (Map<String, String>) -> Unit,
+    private val onTrackStreamStateChanged: (RemoteTrackPublication, KotlinStreamState) -> Unit,
+    private val onDataReceived: (data: NSData, topic: String, senderIdentity: String?) -> Unit
 ) : ParticipantDelegateProtocol, NSObject() {
     @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
     @ObjCSignatureOverride
@@ -108,5 +111,22 @@ class RemoteParticipantDelegate(
         didUpdatePermissions: ParticipantPermissions
     ) {
         onPermissionsUpdated(didUpdatePermissions)
+    }
+
+    @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
+    override fun participant(
+        participant: RemoteParticipant,
+        didReceiveData: NSData,
+        forTopic: String
+    ) {
+        onDataReceived(didReceiveData, forTopic, participant.identity()?.stringValue())
+    }
+
+    @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE", "UNCHECKED_CAST")
+    override fun participant(
+        participant: Participant,
+        didUpdateAttributes: Map<Any?, *>
+    ) {
+        onAttributesUpdated(didUpdateAttributes as Map<String, String>)
     }
 }
