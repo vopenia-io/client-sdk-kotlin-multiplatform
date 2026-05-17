@@ -78,6 +78,9 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.livekit.android)
             api(additionals.androidx.fragment)
+            // MediaPipe Tasks Vision for selfie segmentation (GPU delegate
+            // via TFLite). The 244KB float16 model is bundled in androidMain/assets/.
+            implementation("com.google.mediapipe:tasks-vision:0.10.14")
         }
         jvmMain.dependencies {
             implementation(additionals.kotlinx.coroutines.jvm)
