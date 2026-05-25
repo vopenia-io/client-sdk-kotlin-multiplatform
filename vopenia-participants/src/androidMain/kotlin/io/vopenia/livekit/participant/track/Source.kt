@@ -11,3 +11,11 @@ fun Track.Source.toSource(): Source {
         Track.Source.SCREEN_SHARE_AUDIO -> Source.SCREEN_SHARE_AUDIO
     }
 }
+
+internal fun Source.toLkSource(): Track.Source = when (this) {
+    Source.CAMERA -> Track.Source.CAMERA
+    Source.MICROPHONE -> Track.Source.MICROPHONE
+    Source.SCREEN_SHARE -> Track.Source.SCREEN_SHARE
+    Source.SCREEN_SHARE_AUDIO -> Track.Source.SCREEN_SHARE_AUDIO
+    Source.UNKNOWN -> Track.Source.UNKNOWN
+}
