@@ -30,12 +30,20 @@ import io.livekit.android.events.collect
 import io.livekit.android.room.Room
 import io.livekit.android.room.datastream.StreamTextOptions
 import io.livekit.android.room.datastream.TextStreamInfo
+import io.livekit.android.room.participant.VideoTrackPublishOptions
 import io.livekit.android.room.track.DataPublishReliability
+import io.livekit.android.room.track.LocalVideoTrackOptions
+import io.vopenia.livekit.Sdk
+import io.vopenia.livekit.participant.track.Source
+import io.vopenia.livekit.participant.track.toLkSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import livekit.org.webrtc.Camera2Capturer
+import java.util.UUID
 import io.livekit.android.room.participant.LocalParticipant as LP
+import io.livekit.android.room.track.LocalVideoTrack as LkLocalVideoTrack
 
 class InternalLocalParticipant(
     scope: CoroutineScope,
@@ -258,6 +266,68 @@ class InternalLocalParticipant(
 
     override suspend fun stopScreenShare() {
         localParticipant.setScreenShareEnabled(false, null)
+    }
+
+    // ------------------------------------------------------------------
+    // Additive Android-only API: publish a Camera2 logical camera id as a
+    // LiveKit video track with a caller-chosen source. Originally added
+    // for Neat hardware where camera id "1" is the HDMI capture input and
+    // we want to publish it with `Source.SCREEN_SHARE` so remote peers
+    // render it as content rather than a camera feed. Generic enough to
+    // be useful for any consumer that already has a logical camera id
+    // and wants explicit control over the published track Source.
+    //
+    // Not part of the common LocalParticipant abstract — Android-only by
+    // design. Public parameter is the vopenia `Source` enum so callers
+    // don't pull in the LiveKit-Android dependency directly. Callers
+    // cast `(room.localParticipant as? InternalLocalParticipant)` and
+    // check for non-null before calling.
+    // ------------------------------------------------------------------
+
+    private val cameraSourcedTracks = mutableMapOf<String, Pair<LkLocalVideoTrack, Camera2Capturer>>()
+
+    /**
+     * Publish a Camera2 logical camera as a LiveKit video track with the
+     * given [source]. Idempotent per [cameraId]: if a previous track was
+     * published for the same id, it's torn down first.
+     *
+     * @param cameraId Camera2 logical id (e.g. `"0"` for AI camera, `"1"`
+     *   for HDMI input on Neat hardware).
+     * @param source vopenia [Source] enum — typically `SCREEN_SHARE` for
+     *   content-share semantics; can be `CAMERA` to publish as an
+     *   additional camera feed.
+     * @param trackName Optional name for the track. Defaults to a stable
+     *   `"camera-<id>-<source>"` form.
+     */
+    suspend fun publishVideoTrackFromCamera(
+        cameraId: String,
+        source: Source,
+        trackName: String = "camera-$cameraId-${source.name.lowercase()}",
+    ) {
+        unpublishVideoTrackFromCamera(cameraId)
+        val capturer = Camera2Capturer(Sdk.applicationContext, cameraId, null)
+        val track = localParticipant.createVideoTrack(
+            name = trackName,
+            capturer = capturer,
+            options = LocalVideoTrackOptions(),
+            videoProcessor = null,
+        )
+        track.startCapture()
+        localParticipant.publishVideoTrack(
+            track = track,
+            options = VideoTrackPublishOptions(source = source.toLkSource()),
+        )
+        cameraSourcedTracks[cameraId] = track to capturer
+    }
+
+    /**
+     * Stop and unpublish a track previously published via
+     * [publishVideoTrackFromCamera]. No-op for an unknown [cameraId].
+     */
+    suspend fun unpublishVideoTrackFromCamera(cameraId: String) {
+        val (track, capturer) = cameraSourcedTracks.remove(cameraId) ?: return
+        runCatching { localParticipant.unpublishTrack(track, true) }
+        runCatching { capturer.stopCapture() }
     }
 
     private val videoEffectProcessor: VideoEffectProcessor by lazy { VideoEffectProcessor() }
