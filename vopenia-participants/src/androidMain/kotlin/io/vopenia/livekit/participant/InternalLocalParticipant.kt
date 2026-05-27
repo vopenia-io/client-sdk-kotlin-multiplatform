@@ -27,12 +27,14 @@ import io.vopenia.livekit.permissions.PermissionsController
 import io.vopenia.sdk.utils.Log
 import io.livekit.android.events.ParticipantEvent
 import io.livekit.android.events.collect
+import io.livekit.android.room.Room
+import io.livekit.android.room.datastream.StreamTextOptions
+import io.livekit.android.room.datastream.TextStreamInfo
 import io.livekit.android.room.track.DataPublishReliability
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import java.util.UUID
 import io.livekit.android.room.participant.LocalParticipant as LP
 
 class InternalLocalParticipant(
@@ -182,6 +184,28 @@ class InternalLocalParticipant(
         }
     }
 
+    // Registers a LiveKit Text Stream handler for the `lk.chat` topic — the API
+    // used by `@livekit/components-react` `useChat()` (Meet Web) and by the iOS
+    // SDK. Called from `InternalRoom` after the LiveKit Room is created, since
+    // the receiver lives at Room scope, not Participant scope.
+    fun registerChatTextStream(room: Room) {
+        room.registerTextStreamHandler(CHAT_TEXT_STREAM_TOPIC) { receiver, fromIdentity ->
+            scope.launch {
+                runCatching { receiver.readAll().joinToString("") }
+                    .onSuccess { text ->
+                        chatMessagesFlowInternal.emit(
+                            ChatMessage(
+                                id = receiver.info.id,
+                                timestamp = receiver.info.timestampMs,
+                                message = text,
+                                senderIdentity = fromIdentity.value,
+                            )
+                        )
+                    }
+            }
+        }
+    }
+
     override suspend fun enableMicrophone(enabled: Boolean, device: AudioInputDevice?) {
         PermissionsController.checkOrProvide(Permission.RECORD_AUDIO)
         Log.d("LocalParticipant", "enableMicrophone($enabled, device=${device?.id})")
@@ -255,17 +279,23 @@ class InternalLocalParticipant(
     }
 
     override suspend fun sendChatMessage(text: String): ChatMessage {
-        val message = ChatMessage(
-            id = UUID.randomUUID().toString(),
-            timestamp = System.currentTimeMillis(),
-            message = text,
-            senderIdentity = identity
+        // Use LiveKit Text Streams (lk.chat topic) — the API consumed by
+        // `@livekit/components-react` `useChat()` on the Meet Web side and by
+        // the iOS SDK. LiveKit doesn't echo Text Stream sends back to the
+        // publisher, so we emit the local copy explicitly below.
+        val sender = localParticipant.streamText(
+            StreamTextOptions(
+                topic = CHAT_TEXT_STREAM_TOPIC,
+                operationType = TextStreamInfo.OperationType.CREATE,
+            )
         )
-        localParticipant.publishData(
-            ChatMessageProto.encode(message),
-            DataPublishReliability.RELIABLE,
-            ChatTopics.CHAT,
-            null
+        sender.write(text)
+        sender.close()
+        val message = ChatMessage(
+            id = sender.info.id,
+            timestamp = sender.info.timestampMs,
+            message = text,
+            senderIdentity = identity,
         )
         chatMessagesFlowInternal.emit(message)
         return message
@@ -298,3 +328,8 @@ class InternalLocalParticipant(
         }
     }
 }
+
+// LiveKit Text Streams topic for chat — used by `@livekit/components-react useChat()` (Meet Web)
+// and the iOS SDK. Distinct from the legacy data-channel topic [ChatTopics.CHAT] which is still
+// decoded inbound for backward compatibility with older Android builds.
+private const val CHAT_TEXT_STREAM_TOPIC = "lk.chat"
