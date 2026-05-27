@@ -24,7 +24,7 @@ internal actual class InternalRoom actual constructor(
     actual val localParticipant: LocalParticipant = InternalLocalParticipant(
         scope,
         room.localParticipant
-    )
+    ).also { it.registerChatTextStream(room) }
 
     internal fun initVideoRenderer(textureViewRenderer: TextureViewRenderer) {
         room.initVideoRenderer(textureViewRenderer)
