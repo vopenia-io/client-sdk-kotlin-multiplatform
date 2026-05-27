@@ -35,6 +35,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import platform.AVFoundation.AVCaptureDevicePositionBack
 import platform.AVFoundation.AVCaptureDevicePositionFront
 import platform.AVFoundation.AVCaptureDevicePositionUnspecified
@@ -58,6 +59,12 @@ class InternalLocalParticipant(
     private val delegateWrapper = DelegateKotlin()
     override val stateFlow = MutableStateFlow(
         LocalParticipantState(
+            // Mirror InternalRemoteParticipant which seeds `name` at construction.
+            // For the local participant the LiveKit iOS SDK does NOT fire
+            // `onNameUpdated` for the token's initial value, so without this seed
+            // (and the refreshNameFromNative() hook fired by RoomDelegate on
+            // Connected) the local tile renders LiveKit's "Anonymous" identity.
+            name = localParticipant.name(),
             permissions = InternalParticipantPermissions(
                 localParticipant.permissions()
             ).toMultiplatform(),
@@ -150,6 +157,21 @@ class InternalLocalParticipant(
         scope.async {
             stateFlow.emit(stateFlow.value.copy(attributes = attributes))
         }
+    }
+
+    /**
+     * Re-read the native `name` and publish it on [stateFlow]. Invoked by
+     * RoomDelegate right after the LiveKit room reaches Connected, because
+     * the iOS SDK doesn't fire `onNameUpdated` for the token's initial value
+     * — without this, the local tile shows LiveKit's "Anonymous" identity.
+     *
+     * Synchronous on purpose: uses `update { ... }` (atomic read-modify-write)
+     * rather than `scope.async { emit(...) }` so the new value is visible to
+     * downstream observers before `emit(ConnectionState.Connected)` propagates,
+     * avoiding an "Anonymous" flash on first render.
+     */
+    fun refreshNameFromNative() {
+        stateFlow.update { it.copy(name = localParticipant.name()) }
     }
 
     /// Register the LiveKit Text Stream handler for chat ("lk.chat" topic).

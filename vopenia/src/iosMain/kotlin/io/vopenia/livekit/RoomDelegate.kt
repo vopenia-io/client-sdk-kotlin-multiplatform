@@ -60,6 +60,11 @@ class RoomDelegate(
             }
         }
 
+        // Fallback: the primary trigger lives in the onConnectionState wrapper below,
+        // fired by `roomDidConnect`. Re-emit here too in case the delegate callback
+        // hasn't fired by the time the suspendCoroutine resumes.
+        localParticipant.refreshNameFromNative()
+
         room.remoteParticipants().values.forEach { onParticipantConnected(it as RemoteParticipant) }
 
         if(enableMicrophone) {
@@ -70,7 +75,17 @@ class RoomDelegate(
     private val delegates: List<RoomDelegateProtocol> = listOf(
         delegateWrapper.wrapRoomDelegateWithDelegate(
             RoomDelegateConnectionState(
-                emit,
+                onConnectionState = { state ->
+                    // Re-read the native `name` on Connected BEFORE propagating the
+                    // state so downstream observers (UI tiles) see the name in the
+                    // same frame the connection becomes ready — avoids an
+                    // "Anonymous" flash. Synchronous on purpose
+                    // (refreshNameFromNative uses stateFlow.update).
+                    if (state == ConnectionState.Connected) {
+                        localParticipant.refreshNameFromNative()
+                    }
+                    emit(state)
+                },
                 onParticipantConnected = { onParticipantConnected(it) },
                 onParticipantDisconnected = { onParticipantDisconnected(it) },
                 onParticipantAttributesUpdated = { participant, attributes ->
