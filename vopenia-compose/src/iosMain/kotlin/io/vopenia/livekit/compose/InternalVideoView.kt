@@ -9,7 +9,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.interop.UIKitView
 import androidx.compose.ui.viewinterop.UIKitInteropProperties
 import androidx.compose.ui.viewinterop.UIKitView
 import io.vopenia.livekit.Room
@@ -75,6 +74,13 @@ internal fun InternalVideoView(
         },
         onRelease = {
             rememberedWrapper?.detach(track)
-        }
+        },
+        // The video renderer itself is not interactive. If UIKit receives touches
+        // here, taps on a participant tile don't reach the Compose clickable that
+        // reveals the in-call actions overlay.
+        properties = UIKitInteropProperties(
+            interactionMode = null,
+            isNativeAccessibilityEnabled = false,
+        ),
     )
 }
