@@ -28,6 +28,14 @@ class Room {
 
     val localParticipant = internalRoom.localParticipant
 
+    /**
+     * Mirrors `LiveKitClient.Room.isRecording` — `true` while a server-side
+     * recording (Meet transcript agent OR screen-recording Egress) is active.
+     * Updated by the platform `RoomEvent.RecordingStatusChanged` /
+     * `room:didUpdateIsRecording` hooks.
+     */
+    val isRecording: StateFlow<Boolean> get() = internalRoom.isRecording
+
     init {
         Log.d("Room", "creating room for sdk v0.0.9-alpha4")
     }

@@ -30,6 +30,9 @@ internal actual class InternalRoom actual constructor(
     actual val remoteParticipants: StateFlow<List<RemoteParticipant>>
         get() = remoteParticipantsState.asStateFlow()
 
+    private val isRecordingState = MutableStateFlow(false)
+    actual val isRecording: StateFlow<Boolean> = isRecordingState.asStateFlow()
+
     actual fun setMaxReceivingQuality(quality: VideoSubscribeQuality) {
         // not available on JVM
     }

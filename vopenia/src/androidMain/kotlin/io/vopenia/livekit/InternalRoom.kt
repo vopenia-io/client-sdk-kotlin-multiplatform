@@ -38,6 +38,9 @@ internal actual class InternalRoom actual constructor(
 
     actual val remoteParticipants: StateFlow<List<RemoteParticipant>> = participants.asStateFlow()
 
+    private val isRecordingState = MutableStateFlow(false)
+    actual val isRecording: StateFlow<Boolean> = isRecordingState.asStateFlow()
+
     actual suspend fun connect(url: String, token: String, enableMicrophone: Boolean) {
         // nothing for now
         collect()
@@ -71,6 +74,7 @@ internal actual class InternalRoom actual constructor(
 
                 is RoomEvent.ParticipantConnected -> onParticipantConnected(it.participant)
                 is RoomEvent.ParticipantDisconnected -> onParticipantDisconnected(it.participant)
+                is RoomEvent.RecordingStatusChanged -> isRecordingState.emit(room.isRecording)
                 is RoomEvent.TrackPublished -> {
                     // Re-apply the receiving-quality cap to any new camera track
                     // that arrives mid-call so it adopts the user's setting.

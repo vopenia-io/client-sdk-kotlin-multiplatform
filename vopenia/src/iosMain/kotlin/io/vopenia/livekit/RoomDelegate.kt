@@ -23,7 +23,8 @@ import kotlin.coroutines.suspendCoroutine
 @OptIn(ExperimentalForeignApi::class)
 class RoomDelegate(
     private val scope: CoroutineScope,
-    private val emit: (ConnectionState) -> Unit
+    private val emit: (ConnectionState) -> Unit,
+    private val onIsRecordingUpdated: (Boolean) -> Unit
 ) {
     private val delegateWrapper = DelegateKotlin()
     private val connectOptions = ConnectOptions()
@@ -90,7 +91,8 @@ class RoomDelegate(
                 onParticipantDisconnected = { onParticipantDisconnected(it) },
                 onParticipantAttributesUpdated = { participant, attributes ->
                     onAttributesUpdated(participant, attributes)
-                }
+                },
+                onIsRecordingUpdated = onIsRecordingUpdated
             )
         ),
     )

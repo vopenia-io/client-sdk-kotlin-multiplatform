@@ -16,6 +16,13 @@ internal expect class InternalRoom(
 
     val remoteParticipants: StateFlow<List<RemoteParticipant>>
 
+    /**
+     * `true` when the underlying LiveKit room reports an active server-side
+     * recording (Meet's transcript agent or screen-recording Egress).
+     * Reflects `Room.isRecording` natively — the SDK does not infer it.
+     */
+    val isRecording: StateFlow<Boolean>
+
     suspend fun connect(url: String, token: String, enableMicrophone: Boolean = true)
 
     fun disconnect()
