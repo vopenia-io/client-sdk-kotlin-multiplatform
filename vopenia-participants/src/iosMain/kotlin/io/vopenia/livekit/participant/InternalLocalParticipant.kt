@@ -203,6 +203,20 @@ class InternalLocalParticipant(
     override fun filterListVideo(tracks: List<LocalTrack>): List<LocalVideoTrack> =
         tracks.filterIsInstance<LocalVideoTrack>()
 
+    // Tier (a) noise suppression — surface livered, WebRTC built-in flag.
+    // Tier (b) RNNoise/Krisp processor attach is a follow-up.
+    override val noiseReductionSupported: Boolean = true
+
+    override suspend fun setNoiseReduction(enabled: Boolean) {
+        println("[NOISE-iOS] setNoiseReduction($enabled)")
+        noiseReductionEnabledState.value = enabled
+        // To take effect on the live mic, the audio track has to be
+        // re-published with new AudioCaptureOptions. V1 leaves that to
+        // the caller (toggle mic off then on, or reconnect to the room).
+        // Wiring a hot-swap processor lands with the RNNoise port
+        // (BigBlueBetterAudio).
+    }
+
     override suspend fun enableMicrophone(enabled: Boolean, device: AudioInputDevice?) {
         PermissionsController.checkOrProvide(Permission.RECORD_AUDIO)
         // Route the AVAudioSession input first — LiveKit's AudioCaptureOptions
