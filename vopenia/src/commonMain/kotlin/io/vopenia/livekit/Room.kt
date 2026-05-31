@@ -1,6 +1,7 @@
 package io.vopenia.livekit
 
 import io.vopenia.livekit.events.ConnectionState
+import io.vopenia.livekit.participant.video.VideoSubscribeQuality
 import io.vopenia.livekit.permissions.Permission
 import io.vopenia.livekit.permissions.PermissionRefused
 import io.vopenia.livekit.permissions.PermissionsController
@@ -49,5 +50,14 @@ class Room {
 
     fun disconnect() {
         internalRoom.disconnect()
+    }
+
+    /**
+     * Cap the receiving quality of every remote **camera** track. Screen-share
+     * tracks are not capped. The cap is remembered so any camera that publishes
+     * later in the call adopts it.
+     */
+    fun setMaxReceivingQuality(quality: VideoSubscribeQuality) {
+        internalRoom.setMaxReceivingQuality(quality)
     }
 }

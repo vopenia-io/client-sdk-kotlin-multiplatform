@@ -8,6 +8,7 @@ import io.vopenia.livekit.participant.effects.VideoEffect
 import io.vopenia.livekit.participant.track.local.LocalAudioTrack
 import io.vopenia.livekit.participant.track.local.LocalTrack
 import io.vopenia.livekit.participant.track.local.LocalVideoTrack
+import io.vopenia.livekit.participant.video.VideoResolutionPreset
 import kotlinx.coroutines.CoroutineScope
 
 abstract class LocalParticipant(scope: CoroutineScope) :
@@ -64,6 +65,16 @@ abstract class LocalParticipant(scope: CoroutineScope) :
      * - JVM: no-op.
      */
     abstract suspend fun setVideoEffect(effect: VideoEffect?)
+
+    /**
+     * Change the **outgoing** camera capture resolution. Applied by re-publishing
+     * the camera track at the requested preset's dimensions. No-op if no camera
+     * track is active. The preset persists so a track published later in the
+     * call adopts it.
+     *
+     * Reference: Meet Web `features/settings/components/tabs/VideoTab.tsx`.
+     */
+    abstract suspend fun setMaxSendingResolution(preset: VideoResolutionPreset)
 
     override fun equals(other: Any?): Boolean {
         if (other is LocalParticipant) {

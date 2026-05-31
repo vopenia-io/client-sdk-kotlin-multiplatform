@@ -28,7 +28,7 @@ class RoomDelegate(
     private val delegateWrapper = DelegateKotlin()
     private val connectOptions = ConnectOptions()
     private val roomOptions = RoomOptions()
-    private val room: Room = Room(null, connectOptions, roomOptions)
+    internal val room: Room = Room(null, connectOptions, roomOptions)
     private val participants = MutableStateFlow<List<InternalRemoteParticipant>>(emptyList())
 
     val remoteParticipants = participants.asStateFlow()

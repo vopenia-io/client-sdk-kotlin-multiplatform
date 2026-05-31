@@ -7,6 +7,7 @@ import io.vopenia.livekit.participant.data.DataPacket
 import io.vopenia.livekit.participant.devices.AudioInputDevice
 import io.vopenia.livekit.participant.devices.CameraDevice
 import io.vopenia.livekit.participant.effects.VideoEffect
+import io.vopenia.livekit.participant.video.VideoResolutionPreset
 import io.vopenia.livekit.effects.VideoEffectProcessor
 import io.vopenia.livekit.effects.VideoProcessorAttacher
 import io.vopenia.livekit.participant.local.LocalParticipant
@@ -33,6 +34,7 @@ import io.livekit.android.room.datastream.TextStreamInfo
 import io.livekit.android.room.participant.VideoTrackPublishOptions
 import io.livekit.android.room.track.DataPublishReliability
 import io.livekit.android.room.track.LocalVideoTrackOptions
+import io.livekit.android.room.track.VideoPreset169
 import io.vopenia.livekit.Sdk
 import io.vopenia.livekit.participant.track.Source
 import io.vopenia.livekit.participant.track.toLkSource
@@ -217,9 +219,35 @@ class InternalLocalParticipant(
     override suspend fun enableMicrophone(enabled: Boolean, device: AudioInputDevice?) {
         PermissionsController.checkOrProvide(Permission.RECORD_AUDIO)
         Log.d("LocalParticipant", "enableMicrophone($enabled, device=${device?.id})")
-        // device selection is not yet plumbed through LiveKit's setMicrophoneEnabled —
-        // tracked as a follow-up alongside availableMicrophones().
+        // LiveKit Android's setMicrophoneEnabled doesn't accept a device — the
+        // capture always uses the system's "communication" input. Route the
+        // choice through AudioManager.setCommunicationDevice (API 31+) before
+        // enabling so the new track captures from the desired input.
+        if (enabled && device != null) {
+            applyCommunicationDevice(device)
+        }
         localParticipant.setMicrophoneEnabled(enabled)
+    }
+
+    private fun applyCommunicationDevice(device: AudioInputDevice): Boolean {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S) {
+            // setCommunicationDevice was added in API 31. Older platforms only
+            // support `setSpeakerphoneOn` / `startBluetoothSco` — not useful for
+            // input routing. Log and bail.
+            Log.d("LocalParticipant", "applyCommunicationDevice: API ${android.os.Build.VERSION.SDK_INT} < 31, skipping")
+            return false
+        }
+        val context = runCatching { io.vopenia.livekit.Sdk.applicationContext }.getOrNull()
+            ?: return false
+        val audioManager = context.getSystemService(android.content.Context.AUDIO_SERVICE)
+            as? android.media.AudioManager ?: return false
+        val target = audioManager.availableCommunicationDevices.firstOrNull {
+            it.id.toString() == device.id
+        } ?: run {
+            Log.d("LocalParticipant", "applyCommunicationDevice: no input matching id=${device.id}")
+            return false
+        }
+        return audioManager.setCommunicationDevice(target)
     }
 
     override suspend fun enableCamera(enabled: Boolean, device: CameraDevice?) {
@@ -232,6 +260,30 @@ class InternalLocalParticipant(
 
     override suspend fun switchCamera() {
         findCameraTrack()?.switchCamera(null, null)
+    }
+
+    // Remembered so a camera track published later in the call adopts the
+    // user's choice without an explicit re-call. Defaults to Standard (~360p).
+    @Volatile
+    private var sendingResolutionPreset: VideoResolutionPreset = VideoResolutionPreset.Standard
+
+    override suspend fun setMaxSendingResolution(preset: VideoResolutionPreset) {
+        sendingResolutionPreset = preset
+        val track = findCameraTrack() ?: return
+        val current = track.options
+        val updated = LocalVideoTrackOptions(
+            isScreencast = current.isScreencast,
+            deviceId = current.deviceId,
+            position = current.position,
+            captureParams = preset.toLkPreset().capture
+        )
+        track.restartTrack(updated)
+    }
+
+    private fun VideoResolutionPreset.toLkPreset(): VideoPreset169 = when (this) {
+        VideoResolutionPreset.Low -> VideoPreset169.H180
+        VideoResolutionPreset.Standard -> VideoPreset169.H360
+        VideoResolutionPreset.High -> VideoPreset169.H720
     }
 
     private fun findCameraTrack(): io.livekit.android.room.track.LocalVideoTrack? {

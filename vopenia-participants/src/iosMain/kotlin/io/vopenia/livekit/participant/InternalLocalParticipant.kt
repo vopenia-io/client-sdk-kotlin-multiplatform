@@ -16,6 +16,7 @@ import io.vopenia.livekit.participant.delegate.LocalParticipantDelegate
 import io.vopenia.livekit.participant.devices.AudioInputDevice
 import io.vopenia.livekit.participant.devices.CameraDevice
 import io.vopenia.livekit.participant.effects.VideoEffect
+import io.vopenia.livekit.participant.video.VideoResolutionPreset
 import io.vopenia.livekit.participant.local.LocalParticipant
 import io.vopenia.livekit.participant.local.LocalParticipantState
 import io.vopenia.livekit.participant.track.Kind
@@ -204,7 +205,19 @@ class InternalLocalParticipant(
 
     override suspend fun enableMicrophone(enabled: Boolean, device: AudioInputDevice?) {
         PermissionsController.checkOrProvide(Permission.RECORD_AUDIO)
-        // Per-device selection is not yet plumbed through AudioCaptureOptions binding.
+        // Route the AVAudioSession input first — LiveKit's AudioCaptureOptions
+        // doesn't carry an explicit input choice on iOS, the platform session
+        // does. Errors are non-fatal (we still try to enable).
+        if (enabled && device != null) {
+            runCatching {
+                suspendCoroutine { continuation ->
+                    LocalParticipantKotlin.setPreferredAudioInputWithUid(device.id) { error ->
+                        if (null != error) continuation.resumeWithException(NSErrorException(error))
+                        else continuation.resume(Unit)
+                    }
+                }
+            }.onFailure { println("setPreferredAudioInput failed: $it") }
+        }
         suspendCoroutine { continuation ->
             localParticipant.setMicrophoneWithEnabled(enabled, null, null) { _, error ->
                 if (null != error) continuation.resumeWithException(NSErrorException(error))
@@ -241,6 +254,24 @@ class InternalLocalParticipant(
             }
         }
         currentCameraPosition = newPosition
+    }
+
+    override suspend fun setMaxSendingResolution(preset: VideoResolutionPreset) {
+        val (width, height) = when (preset) {
+            VideoResolutionPreset.Low -> 320 to 180
+            VideoResolutionPreset.Standard -> 640 to 360
+            VideoResolutionPreset.High -> 1280 to 720
+        }
+        suspendCoroutine { continuation ->
+            LocalParticipantKotlin.setCameraResolutionWithParticipant(
+                participant = localParticipant,
+                width = width,
+                height = height
+            ) { error ->
+                if (null != error) continuation.resumeWithException(NSErrorException(error))
+                else continuation.resume(Unit)
+            }
+        }
     }
 
     override suspend fun startScreenShare() {

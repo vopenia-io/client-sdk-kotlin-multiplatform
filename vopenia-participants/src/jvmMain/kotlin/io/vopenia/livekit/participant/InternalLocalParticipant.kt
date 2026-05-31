@@ -4,6 +4,7 @@ import io.vopenia.livekit.participant.chat.ChatMessage
 import io.vopenia.livekit.participant.devices.AudioInputDevice
 import io.vopenia.livekit.participant.devices.CameraDevice
 import io.vopenia.livekit.participant.effects.VideoEffect
+import io.vopenia.livekit.participant.video.VideoResolutionPreset
 import io.vopenia.livekit.participant.local.LocalParticipant
 import io.vopenia.livekit.participant.local.LocalParticipantState
 import io.vopenia.livekit.participant.track.local.LocalAudioTrack
@@ -49,6 +50,10 @@ class InternalLocalParticipant(
     }
 
     override suspend fun setVideoEffect(effect: VideoEffect?) {
+        // not available on JVM
+    }
+
+    override suspend fun setMaxSendingResolution(preset: VideoResolutionPreset) {
         // not available on JVM
     }
 

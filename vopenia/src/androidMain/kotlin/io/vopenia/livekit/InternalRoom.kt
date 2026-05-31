@@ -5,10 +5,14 @@ import io.vopenia.livekit.participant.InternalLocalParticipant
 import io.vopenia.livekit.participant.InternalRemoteParticipant
 import io.vopenia.livekit.participant.local.LocalParticipant
 import io.vopenia.livekit.participant.remote.RemoteParticipant
+import io.vopenia.livekit.participant.video.VideoSubscribeQuality
 import io.livekit.android.LiveKit
 import io.livekit.android.annotations.Beta
 import io.livekit.android.events.RoomEvent
 import io.livekit.android.renderer.TextureViewRenderer
+import io.livekit.android.room.track.RemoteTrackPublication
+import io.livekit.android.room.track.Track
+import io.livekit.android.room.track.VideoQuality
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -67,6 +71,14 @@ internal actual class InternalRoom actual constructor(
 
                 is RoomEvent.ParticipantConnected -> onParticipantConnected(it.participant)
                 is RoomEvent.ParticipantDisconnected -> onParticipantDisconnected(it.participant)
+                is RoomEvent.TrackPublished -> {
+                    // Re-apply the receiving-quality cap to any new camera track
+                    // that arrives mid-call so it adopts the user's setting.
+                    val pub = it.publication
+                    if (pub is RemoteTrackPublication && pub.source == Track.Source.CAMERA) {
+                        pub.setVideoQuality(receivingQuality.toLkVideoQuality())
+                    }
+                }
                 // is RoomEvent.ParticipantMetadataChanged -> TODO()
                 // is RoomEvent.ParticipantNameChanged -> TODO()
                 // is RoomEvent.ParticipantPermissionsChanged -> TODO()
@@ -95,6 +107,26 @@ internal actual class InternalRoom actual constructor(
 
     actual fun disconnect() {
         room.disconnect()
+    }
+
+    @Volatile
+    private var receivingQuality: VideoSubscribeQuality = VideoSubscribeQuality.High
+
+    actual fun setMaxReceivingQuality(quality: VideoSubscribeQuality) {
+        receivingQuality = quality
+        val target = quality.toLkVideoQuality()
+        room.remoteParticipants.values.forEach { participant ->
+            participant.trackPublications.values
+                .filterIsInstance<RemoteTrackPublication>()
+                .filter { it.source == Track.Source.CAMERA }
+                .forEach { it.setVideoQuality(target) }
+        }
+    }
+
+    private fun VideoSubscribeQuality.toLkVideoQuality(): VideoQuality = when (this) {
+        VideoSubscribeQuality.Low -> VideoQuality.LOW
+        VideoSubscribeQuality.Standard -> VideoQuality.MEDIUM
+        VideoSubscribeQuality.High -> VideoQuality.HIGH
     }
 
     private fun onParticipantConnected(participant: RP) {
