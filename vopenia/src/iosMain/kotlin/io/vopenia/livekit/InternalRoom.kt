@@ -17,12 +17,21 @@ internal actual class InternalRoom actual constructor(
     private val scope: CoroutineScope,
     private val connectionStateEmitter: MutableStateFlow<ConnectionState>
 ) {
-    private val roomDelegate = RoomDelegate(scope) {
-        scope.launch {
-            Log.d("InternalRoom", "launching new event $it")
-            connectionStateEmitter.emit(it)
+    private val isRecordingState = MutableStateFlow(false)
+    actual val isRecording: StateFlow<Boolean> = isRecordingState
+
+    private val roomDelegate = RoomDelegate(
+        scope,
+        emit = { state ->
+            scope.launch {
+                Log.d("InternalRoom", "launching new event $state")
+                connectionStateEmitter.emit(state)
+            }
+        },
+        onIsRecordingUpdated = { value ->
+            scope.launch { isRecordingState.emit(value) }
         }
-    }
+    )
 
     actual suspend fun connect(
         url: String,
