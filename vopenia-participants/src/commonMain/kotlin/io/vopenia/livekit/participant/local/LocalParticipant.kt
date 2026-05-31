@@ -10,9 +10,51 @@ import io.vopenia.livekit.participant.track.local.LocalTrack
 import io.vopenia.livekit.participant.track.local.LocalVideoTrack
 import io.vopenia.livekit.participant.video.VideoResolutionPreset
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 abstract class LocalParticipant(scope: CoroutineScope) :
     Participant<LocalTrack, LocalParticipantState, LocalAudioTrack, LocalVideoTrack>(scope) {
+
+    /**
+     * Whether this platform can apply noise reduction to the captured
+     * microphone signal. `false` on JVM (no audio backend wired up).
+     *
+     * UI consumers should hide the noise-reduction toggle when this is
+     * `false` — [setNoiseReduction] is a no-op in that case.
+     */
+    open val noiseReductionSupported: Boolean = false
+
+    protected val noiseReductionEnabledState = MutableStateFlow(true)
+
+    /**
+     * Current noise-reduction state. Default is `true` (matches the WebRTC
+     * default and the historical behaviour of every consumer).
+     *
+     * Note on liveness: the V1 implementation uses the built-in WebRTC
+     * `noiseSuppression` capture option, which is read when the microphone
+     * track is created. Toggling while the mic is active therefore
+     * re-publishes the audio track to take effect.
+     */
+    val noiseReductionEnabled: StateFlow<Boolean> = noiseReductionEnabledState.asStateFlow()
+
+    /**
+     * Enable or disable noise reduction on the captured microphone signal.
+     *
+     * V1 implementation: tier (a) WebRTC built-in `noiseSuppression` flag.
+     * Tier (b) ML-based processor (RNNoise via BigBlueBetterAudio, or Krisp)
+     * is tracked as a follow-up — see [noiseReductionSupported] and the
+     * platform-specific overrides.
+     *
+     * No-op when [noiseReductionSupported] is `false`.
+     */
+    open suspend fun setNoiseReduction(enabled: Boolean) {
+        noiseReductionEnabledState.value = enabled
+        // Subclasses override to re-create the audio capturer with the new
+        // option set if the microphone is currently active. The default
+        // updates state only — used by JVM.
+    }
 
     suspend fun enableMicrophone(enabled: Boolean) = enableMicrophone(enabled, null)
 
