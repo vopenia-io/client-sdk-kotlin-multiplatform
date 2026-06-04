@@ -16,6 +16,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -31,6 +33,10 @@ class RoomDelegate(
     private val roomOptions = RoomOptions()
     internal val room: Room = Room(null, connectOptions, roomOptions)
     private val participants = MutableStateFlow<List<InternalRemoteParticipant>>(emptyList())
+
+    // Guards the read-check-create-emit on [participants]: connectWithUrl() fans
+    // onParticipantConnected() out concurrently for every pre-existing participant.
+    private val participantsMutex = Mutex()
 
     val remoteParticipants = participants.asStateFlow()
     val localParticipant = InternalLocalParticipant(scope, room.localParticipant()).also {
@@ -126,12 +132,17 @@ class RoomDelegate(
 
     private fun onParticipantConnected(participant: RemoteParticipant) {
         scope.launch {
-            val list = participants.value
-
             val identity = participant.identity()?.stringValue()
 
-            list.find { it.identity == identity }.let {
-                if (null == it) {
+            // Read-check-create-emit must be atomic as a unit. connectWithUrl()
+            // fans this out concurrently for every pre-existing participant; a
+            // plain `participants.value` read + `emit(list + new)` races — two
+            // coroutines read the same list and the last emit wins, so a
+            // participant is silently dropped from the grid (or, when the same
+            // identity is processed twice, added in duplicate).
+            participantsMutex.withLock {
+                val list = participants.value
+                if (list.none { it.identity == identity }) {
                     val newParticipant = InternalRemoteParticipant(scope, participant, true)
                     newParticipant.onConnect()
 

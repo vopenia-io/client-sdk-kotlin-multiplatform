@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import io.livekit.android.room.participant.RemoteParticipant as RP
 
 internal actual class InternalRoom actual constructor(
@@ -35,6 +37,11 @@ internal actual class InternalRoom actual constructor(
     }
 
     private val participants = MutableStateFlow<List<InternalRemoteParticipant>>(emptyList())
+
+    // Guards the read-check-create-emit on [participants]: connect() fans
+    // onParticipantConnected() out concurrently for every pre-existing
+    // participant, and the dispatcher is multi-threaded.
+    private val participantsMutex = Mutex()
 
     actual val remoteParticipants: StateFlow<List<RemoteParticipant>> = participants.asStateFlow()
 
@@ -135,15 +142,17 @@ internal actual class InternalRoom actual constructor(
 
     private fun onParticipantConnected(participant: RP) {
         scope.launch {
-            val list = participants.value
-
             val identity = participant.identity?.value
 
-            println("Having onParticipantConnected ${participant.identity}")
-
-            list.find { it.identity == identity }.let {
-                println("found existing participant $it")
-                if (null == it) {
+            // Read-check-create-emit must be atomic as a unit. connect() fans this
+            // out concurrently for every pre-existing participant on a multi-thread
+            // dispatcher; a plain `participants.value` read + `emit(list + new)`
+            // races — two coroutines read the same list and the last emit wins, so
+            // a participant is silently dropped from the grid (or, when the same
+            // identity is processed twice, added in duplicate).
+            participantsMutex.withLock {
+                val list = participants.value
+                if (list.none { it.identity == identity }) {
                     val newParticipant = InternalRemoteParticipant(scope, participant, true)
                     newParticipant.onConnect()
 
