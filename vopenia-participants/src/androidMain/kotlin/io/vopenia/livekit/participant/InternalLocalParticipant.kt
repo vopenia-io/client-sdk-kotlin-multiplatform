@@ -315,7 +315,15 @@ class InternalLocalParticipant(
 
     override suspend fun updateAttributes(attributes: Map<String, String>) {
         localParticipant.updateAttributes(attributes)
-        stateFlow.emit(stateFlow.value.copy(attributes = localParticipant.attributes))
+        // LiveKit sends the attribute update to the server but does NOT reflect it
+        // back into `localParticipant.attributes` for the LOCAL participant (no self
+        // echo), so reading it here returns the stale map. Merge the written keys
+        // into our own state — otherwise local consumers (e.g. raise-hand) never see
+        // their own change and reconcile the optimistic state away. Remote peers get
+        // the change via the normal server broadcast.
+        stateFlow.emit(
+            stateFlow.value.copy(attributes = localParticipant.attributes + attributes)
+        )
     }
 
     override suspend fun startScreenShare() {
