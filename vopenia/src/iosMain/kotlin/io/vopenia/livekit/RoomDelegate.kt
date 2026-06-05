@@ -12,6 +12,7 @@ import io.vopenia.livekit.participant.InternalRemoteParticipant
 import io.vopenia.livekit.room.RoomDelegateConnectionState
 import io.vopenia.sdk.utils.Log
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -74,8 +75,18 @@ class RoomDelegate(
 
         room.remoteParticipants().values.forEach { onParticipantConnected(it as RemoteParticipant) }
 
-        if(enableMicrophone) {
-            localParticipant.enableMicrophone(true)
+        if (enableMicrophone) {
+            // A moderator may have revoked this participant's microphone publishing
+            // (can_publish_sources). The native publish then fails — catch it so a
+            // restricted participant still joins (muted; the UI greys the mic control)
+            // instead of crashing connect. Re-throw cancellation so it isn't masked.
+            try {
+                localParticipant.enableMicrophone(true)
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (error: Throwable) {
+                Log.d("RoomDelegate", "Microphone not enabled on connect: ${error.message}")
+            }
         }
     }
 

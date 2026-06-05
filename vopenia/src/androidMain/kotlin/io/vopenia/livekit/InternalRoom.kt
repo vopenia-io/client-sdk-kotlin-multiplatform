@@ -6,6 +6,7 @@ import io.vopenia.livekit.participant.InternalRemoteParticipant
 import io.vopenia.livekit.participant.local.LocalParticipant
 import io.vopenia.livekit.participant.remote.RemoteParticipant
 import io.vopenia.livekit.participant.video.VideoSubscribeQuality
+import io.vopenia.sdk.utils.Log
 import io.livekit.android.LiveKit
 import io.livekit.android.annotations.Beta
 import io.livekit.android.events.RoomEvent
@@ -13,6 +14,7 @@ import io.livekit.android.renderer.TextureViewRenderer
 import io.livekit.android.room.track.RemoteTrackPublication
 import io.livekit.android.room.track.Track
 import io.livekit.android.room.track.VideoQuality
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -60,7 +62,18 @@ internal actual class InternalRoom actual constructor(
         room.remoteParticipants.values.forEach { onParticipantConnected(it) }
 
         if (enableMicrophone) {
-            room.localParticipant.setMicrophoneEnabled(true)
+            // A moderator may have revoked this participant's right to publish the
+            // microphone (can_publish_sources). LiveKit then throws PublishException
+            // ("insufficient permissions"). Catch it so a restricted participant still
+            // joins (muted; the UI greys the mic control) instead of crashing the
+            // connect coroutine. Re-throw cancellation so it isn't masked.
+            try {
+                room.localParticipant.setMicrophoneEnabled(true)
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (error: Throwable) {
+                Log.d("InternalRoom", "Microphone not enabled on connect: ${error.message}")
+            }
         }
     }
 
