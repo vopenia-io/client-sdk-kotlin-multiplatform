@@ -2,6 +2,7 @@ package io.vopenia.livekit.participant
 
 import LiveKitClient.setMicrophoneWithEnabled
 import LiveKitClient.setScreenShareWithEnabled
+import LiveKitClientKotlin.BbbaNoiseFilterKotlin
 import LiveKitClientKotlin.DelegateKotlin
 import LiveKitClientKotlin.LocalParticipantKotlin
 import io.vopenia.livekit.participant.effects.BackgroundImage
@@ -210,11 +211,10 @@ class InternalLocalParticipant(
     override suspend fun setNoiseReduction(enabled: Boolean) {
         println("[NOISE-iOS] setNoiseReduction($enabled)")
         noiseReductionEnabledState.value = enabled
-        // To take effect on the live mic, the audio track has to be
-        // re-published with new AudioCaptureOptions. V1 leaves that to
-        // the caller (toggle mic off then on, or reconnect to the room).
-        // Wiring a hot-swap processor lands with the RNNoise port
-        // (BigBlueBetterAudio).
+        // RNNoise (BigBlueBetterAudio) capture-post processor. Installed lazily
+        // on AudioManager.shared.capturePostProcessingDelegate and toggled live;
+        // it is a pure pass-through while disabled, so no track re-publish.
+        BbbaNoiseFilterKotlin.setEnabled(enabled)
     }
 
     override suspend fun enableMicrophone(enabled: Boolean, device: AudioInputDevice?) {

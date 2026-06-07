@@ -1,5 +1,6 @@
 package io.vopenia.livekit
 
+import LiveKitClientKotlin.BbbaNoiseFilterKotlin
 import LiveKitClientKotlin.LocalParticipantKotlin
 import io.vopenia.livekit.events.ConnectionState
 import io.vopenia.livekit.participant.local.LocalParticipant
@@ -38,6 +39,16 @@ internal actual class InternalRoom actual constructor(
         token: String,
         enableMicrophone: Boolean
     ) {
+        // Install the BBBA capture-post delegate BEFORE LiveKit boots its
+        // audio pipeline. Doing it after (e.g. only on first setNoiseReduction
+        // toggle) misses the `audioProcessingInitialize` callback that
+        // LiveKit fires when the first mic track is published, so our
+        // BBBAEngine never gets constructed and the processor stays a
+        // pass-through for the whole session. Symmetric to the Android side
+        // where BbbaNoiseReduction is registered via LiveKitOverrides at
+        // LiveKit.create() time, which also predates any track publication.
+        BbbaNoiseFilterKotlin.install()
+
         // first we reset the connection state
         connectionStateEmitter.emit(ConnectionState.Connecting)
 

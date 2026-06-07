@@ -50,6 +50,16 @@ kotlin {
             extraOpts += listOf("-compiler-option", "-fmodules")
         }
 
+        // BBBACore must be declared everywhere LiveKitClientKotlin is —
+        // its podspec depends on BBBACore but it lives outside any podspec
+        // repo (local sibling checkout in `../BigBlueBetterAudio`).
+        pod("BBBACore") {
+            version = "1.0.0"
+            source = path(rootProject.file("../BigBlueBetterAudio"))
+            linkOnly = true
+            extraOpts += listOf("-compiler-option", "-fmodules")
+        }
+
         pod("LiveKitClientKotlin") {
             version = "2.6.0"
             linkOnly = true
