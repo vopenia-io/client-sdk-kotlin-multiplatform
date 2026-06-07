@@ -8,6 +8,9 @@ import io.vopenia.livekit.participant.remote.RemoteParticipant
 import io.vopenia.livekit.participant.video.VideoSubscribeQuality
 import io.vopenia.sdk.utils.Log
 import io.livekit.android.LiveKit
+import io.livekit.android.LiveKitOverrides
+import io.livekit.android.AudioOptions
+import io.vopenia.livekit.audio.BbbaNoiseReduction
 import io.livekit.android.annotations.Beta
 import io.livekit.android.events.RoomEvent
 import io.livekit.android.renderer.TextureViewRenderer
@@ -28,7 +31,17 @@ internal actual class InternalRoom actual constructor(
     private val scope: CoroutineScope,
     private val connectionStateEmitter: MutableStateFlow<ConnectionState>
 ) {
-    private val room = LiveKit.create(Sdk.applicationContext)
+    // Register the BigBlueBetterAudio capture-post noise processor at Room
+    // creation (the only point where audio processing can be injected). It is
+    // a pass-through until LocalParticipant.setNoiseReduction(true) enables it.
+    private val room = LiveKit.create(
+        Sdk.applicationContext,
+        overrides = LiveKitOverrides(
+            audioOptions = AudioOptions(
+                audioProcessorOptions = BbbaNoiseReduction.audioProcessorOptions()
+            )
+        )
+    )
     actual val localParticipant: LocalParticipant = InternalLocalParticipant(
         scope,
         room.localParticipant

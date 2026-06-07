@@ -221,13 +221,16 @@ class InternalLocalParticipant(
     override val noiseReductionSupported: Boolean = true
 
     override suspend fun setNoiseReduction(enabled: Boolean) {
-        Log.d("LocalParticipant", "setNoiseReduction($enabled)")
+        // INFO via android.util.Log (the SDK's expect-Log only has .d) — visible
+        // at default logcat level, pairs with the BbbaAudioProcessor
+        // "BBBA ON/OFF" line further down the stack. Together they prove the
+        // toggle propagated UI → SDK → native processor.
+        android.util.Log.i("LocalParticipant", "setNoiseReduction($enabled) → BbbaNoiseReduction")
         noiseReductionEnabledState.value = enabled
-        // To take effect on the live mic, the audio track has to be
-        // re-published with the new LocalAudioTrackOptions. V1 leaves
-        // that to the caller (toggle mic off then on, or reconnect to
-        // the room). Wiring a hot-swap processor lands with the RNNoise
-        // port (BigBlueBetterAudio).
+        // RNNoise (BigBlueBetterAudio) capture-post processor. It is registered
+        // once at Room creation (see InternalRoom) and toggled live here; it is
+        // a pure pass-through while disabled, so no track re-publish is needed.
+        io.vopenia.livekit.audio.BbbaNoiseReduction.setEnabled(enabled)
     }
 
     override suspend fun enableMicrophone(enabled: Boolean, device: AudioInputDevice?) {

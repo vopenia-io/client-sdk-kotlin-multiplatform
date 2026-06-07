@@ -51,6 +51,20 @@ kotlin {
             extraOpts += listOf("-compiler-option", "-fmodules")
         }
 
+        // BigBlueBetterAudio C/C++ core + iOS ObjC++ façade. Lives in its own
+        // pod (rooted at the BigBlueBetterAudio repo top) because CocoaPods
+        // rejects `../`-relative source paths. LiveKitClientKotlin depends on
+        // it transitively via the podspec — we declare it here so the synthetic
+        // Podfile picks the local sibling checkout instead of trying to fetch
+        // BBBACore from a podspec repo (which doesn't exist).
+        pod("BBBACore") {
+            version = "1.0.0"
+            source = path(rootProject.file("../BigBlueBetterAudio"))
+            moduleName = "BBBACore"
+            packageName = "BBBACore"
+            extraOpts += listOf("-compiler-option", "-fmodules")
+        }
+
         pod("LiveKitClientKotlin") {
             version = "2.6.0"
             source = path(rootProject.file("../LiveKitClientKotlin"))
@@ -91,8 +105,23 @@ kotlin {
 android {
     namespace = "${rootProject.ext["namespace"]}.participants"
     compileSdk = additionals.versions.compileSdkVersion.get().toInt()
+    // NDK build of the BigBlueBetterAudio noise-suppression core (RNNoise +
+    // Faust chain) + JNI bridge -> libbbba.so. Sources live in the sibling
+    // BigBlueBetterAudio repo (override the location with -DBBBA_DIR=).
+    ndkVersion = "25.1.8937393"
     defaultConfig {
         minSdk = additionals.versions.minSdkVersion.get().toInt()
+        externalNativeBuild {
+            cmake {
+                abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
+            }
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path = file("src/androidMain/cpp/CMakeLists.txt")
+            version = "3.22.1"
+        }
     }
     compileOptions {
         sourceCompatibility = rootProject.ext["javaVersionObject"] as JavaVersion
