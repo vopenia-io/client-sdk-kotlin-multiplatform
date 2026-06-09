@@ -58,14 +58,23 @@ internal actual class InternalRoom actual constructor(
     // participant, and the dispatcher is multi-threaded.
     private val participantsMutex = Mutex()
 
+    // The room-event collector must be started exactly once. connect() is called
+    // again on every rejoin (the LiveKit Room is reused across leave/rejoin); a
+    // fresh collect() each time would stack duplicate handlers (events firing 2×, 3×…).
+    private var collecting = false
+
     actual val remoteParticipants: StateFlow<List<RemoteParticipant>> = participants.asStateFlow()
 
     private val isRecordingState = MutableStateFlow(false)
     actual val isRecording: StateFlow<Boolean> = isRecordingState.asStateFlow()
 
     actual suspend fun connect(url: String, token: String, enableMicrophone: Boolean) {
-        // nothing for now
-        collect()
+        // Start the room-event collector ONCE (see [collecting]); relaunching it on
+        // every rejoin would multiply the handlers.
+        if (!collecting) {
+            collecting = true
+            collect()
+        }
 
         // first we reset the connection state
         connectionStateEmitter.emit(ConnectionState.Connecting)
@@ -98,12 +107,17 @@ internal actual class InternalRoom actual constructor(
                 is RoomEvent.Connected -> connectionStateEmitter.emit(ConnectionState.Connected)
                 // is RoomEvent.ConnectionQualityChanged -> TODO()
                 // is RoomEvent.DataReceived -> TODO()
-                is RoomEvent.Disconnected -> connectionStateEmitter.emit(ConnectionState.Disconnected)
-                is RoomEvent.FailedToConnect -> connectionStateEmitter.emit(
-                    ConnectionState.ConnectionError(
-                        it.error
-                    )
-                )
+                // Purge the remote list on terminal states so a rejoin (which reuses this
+                // Room) starts clean instead of inheriting stale connected=false zombies
+                // that would make onParticipantConnected skip the re-announced participants.
+                is RoomEvent.Disconnected -> {
+                    purgeParticipants()
+                    connectionStateEmitter.emit(ConnectionState.Disconnected)
+                }
+                is RoomEvent.FailedToConnect -> {
+                    purgeParticipants()
+                    connectionStateEmitter.emit(ConnectionState.ConnectionError(it.error))
+                }
 
                 is RoomEvent.ParticipantConnected -> onParticipantConnected(it.participant)
                 is RoomEvent.ParticipantDisconnected -> onParticipantDisconnected(it.participant)
@@ -178,11 +192,25 @@ internal actual class InternalRoom actual constructor(
             // identity is processed twice, added in duplicate).
             participantsMutex.withLock {
                 val list = participants.value
-                if (list.none { it.identity == identity }) {
-                    val newParticipant = InternalRemoteParticipant(scope, participant, true)
-                    newParticipant.onConnect()
-
-                    participants.emit(list + newParticipant)
+                val existing = if (identity != null) list.firstOrNull { it.identity == identity } else null
+                when {
+                    existing == null -> {
+                        val newParticipant = InternalRemoteParticipant(scope, participant, true)
+                        newParticipant.onConnect()
+                        participants.emit(list + newParticipant)
+                    }
+                    // Same identity already present but marked disconnected — a stale entry left
+                    // by a local leave/rejoin or a fast reconnect. Replace it with a fresh wrapper
+                    // so the (re)joining participant becomes visible again instead of being
+                    // silently skipped as a "duplicate".
+                    !existing.state.value.connected -> {
+                        existing.onDisconnect()
+                        val newParticipant = InternalRemoteParticipant(scope, participant, true)
+                        newParticipant.onConnect()
+                        participants.emit(list.filterNot { it === existing } + newParticipant)
+                    }
+                    // Same identity AND still connected -> genuine duplicate event, ignore.
+                    else -> Unit
                 }
             }
         }
@@ -192,7 +220,31 @@ internal actual class InternalRoom actual constructor(
         scope.launch {
             val identity = participant.identity?.value
 
-            participants.value.find { it.identity == identity }?.onDisconnect()
+            participantsMutex.withLock {
+                // Match by identity only when non-null (a null-identity event must not wipe every
+                // null-identity entry); remove by object reference so exactly one entry drops.
+                val target = if (identity != null) {
+                    participants.value.firstOrNull { it.identity == identity }
+                } else {
+                    null
+                }
+                target?.onDisconnect()
+                if (target != null) {
+                    participants.emit(participants.value.filterNot { it === target })
+                }
+            }
+        }
+    }
+
+    // Drop every remote participant (used on terminal connection states). Emits
+    // connected=false on each first so already-attached collectors (e.g. the visio
+    // RoomModel per-participant watchers) clean their cells, instead of a silent wipe.
+    private suspend fun purgeParticipants() {
+        participantsMutex.withLock {
+            val current = participants.value
+            if (current.isEmpty()) return@withLock
+            current.forEach { it.onDisconnect() }
+            participants.emit(emptyList())
         }
     }
 }

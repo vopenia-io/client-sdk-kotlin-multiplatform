@@ -102,6 +102,12 @@ class RoomDelegate(
                     if (state == ConnectionState.Connected) {
                         localParticipant.refreshNameFromNative()
                     }
+                    // Purge the remote list on terminal states (didDisconnectWithError maps to
+                    // either Disconnected or ConnectionError) so a rejoin reusing this Room
+                    // starts clean instead of inheriting stale connected=false zombies.
+                    if (state == ConnectionState.Disconnected || state is ConnectionState.ConnectionError) {
+                        scope.launch { purgeParticipants() }
+                    }
                     emit(state)
                 },
                 onParticipantConnected = { onParticipantConnected(it) },
@@ -153,21 +159,60 @@ class RoomDelegate(
             // identity is processed twice, added in duplicate).
             participantsMutex.withLock {
                 val list = participants.value
-                if (list.none { it.identity == identity }) {
-                    val newParticipant = InternalRemoteParticipant(scope, participant, true)
-                    newParticipant.onConnect()
-
-                    participants.emit(list + newParticipant)
+                val existing = if (identity != null) list.firstOrNull { it.identity == identity } else null
+                when {
+                    existing == null -> {
+                        val newParticipant = InternalRemoteParticipant(scope, participant, true)
+                        newParticipant.onConnect()
+                        participants.emit(list + newParticipant)
+                    }
+                    // Same identity already present but disconnected — a stale entry left by a
+                    // local leave/rejoin or a fast reconnect. Replace it with a fresh wrapper so
+                    // the (re)joining participant becomes visible again instead of being skipped.
+                    !existing.state.value.connected -> {
+                        existing.onDisconnect()
+                        val newParticipant = InternalRemoteParticipant(scope, participant, true)
+                        newParticipant.onConnect()
+                        participants.emit(list.filterNot { it === existing } + newParticipant)
+                    }
+                    // Same identity AND still connected -> genuine duplicate, ignore.
+                    else -> Unit
                 }
             }
         }
     }
 
     private fun onParticipantDisconnected(participant: RemoteParticipant) {
+        // Read the identity SYNCHRONOUSLY on the delegate thread: by the time scope.launch runs,
+        // iOS has already torn down the native participant and identity() returns null (Android
+        // keeps it), so the entry would never match and never be removed — the participant lingers
+        // and shows up duplicated when they rejoin with a fresh identity.
+        val identity = participant.identity()?.stringValue()
         scope.launch {
-            val identity = participant.identity()?.stringValue()
+            participantsMutex.withLock {
+                // Match by identity only when non-null; remove by object reference so exactly
+                // one entry drops (a null-identity event must not wipe all null-identity entries).
+                val target = if (identity != null) {
+                    participants.value.firstOrNull { it.identity == identity }
+                } else {
+                    null
+                }
+                target?.onDisconnect()
+                if (target != null) {
+                    participants.emit(participants.value.filterNot { it === target })
+                }
+            }
+        }
+    }
 
-            participants.value.find { it.identity == identity }?.onDisconnect()
+    // Drop every remote participant on terminal connection states. Emits connected=false
+    // on each first so already-attached collectors clean their cells, not a silent wipe.
+    private suspend fun purgeParticipants() {
+        participantsMutex.withLock {
+            val current = participants.value
+            if (current.isEmpty()) return@withLock
+            current.forEach { it.onDisconnect() }
+            participants.emit(emptyList())
         }
     }
 }
