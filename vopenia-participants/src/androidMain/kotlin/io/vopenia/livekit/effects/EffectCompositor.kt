@@ -17,7 +17,9 @@ import io.vopenia.livekit.Sdk
 import io.vopenia.livekit.participant.effects.BackgroundImage
 import io.vopenia.livekit.participant.effects.VideoEffect
 import io.vopenia.sdk.utils.Log
+import java.io.FileInputStream
 import java.io.InputStream
+import kotlin.math.ceil
 import kotlin.math.max
 
 /**
@@ -132,37 +134,76 @@ internal class EffectCompositor {
         cachedImages[key]?.let { cached ->
             if (cached.width == width && cached.height == height) return cached
         }
-        val raw = decodeBackground(image) ?: return null
-        val scaled = Bitmap.createScaledBitmap(raw, width, height, true)
+        val raw = decodeBackground(image, width, height) ?: return null
+        val scaled = coverScale(raw, width, height)
         if (scaled !== raw) raw.recycle()
         cachedImages[key]?.recycle()
         cachedImages[key] = scaled
         return scaled
     }
 
-    private fun decodeBackground(image: BackgroundImage): Bitmap? {
+    /**
+     * Scales [src] to fill [width] x [height] while preserving its aspect ratio,
+     * then center-crops the overflow ("cover"). A plain `createScaledBitmap` to the
+     * frame size stretches the photo to the frame's aspect (e.g. a 16:9 background
+     * squashed into a 9:16 portrait frame), which is what made the background look
+     * distorted.
+     */
+    private fun coverScale(src: Bitmap, width: Int, height: Int): Bitmap {
+        if (src.width == width && src.height == height) return src
+        val scale = max(width.toFloat() / src.width, height.toFloat() / src.height)
+        val sw = max(width, ceil(src.width * scale).toInt())
+        val sh = max(height, ceil(src.height * scale).toInt())
+        val scaled = Bitmap.createScaledBitmap(src, sw, sh, true)
+        val x = (sw - width) / 2
+        val y = (sh - height) / 2
+        val cropped = Bitmap.createBitmap(scaled, x, y, width, height)
+        if (scaled !== src && scaled !== cropped) scaled.recycle()
+        return cropped
+    }
+
+    /** Opens the raw byte stream backing [image], or null if unresolvable. */
+    private fun openBackgroundStream(image: BackgroundImage): InputStream? {
         val context: Context = Sdk.applicationContext
-        return runCatching {
-            when (image) {
-                is BackgroundImage.Bundled ->
-                    context.assets.open(image.name).use(BitmapFactory::decodeStream)
-                is BackgroundImage.Uri -> {
-                    val uri = Uri.parse(image.uri)
-                    when (uri.scheme) {
-                        "file" -> uri.path?.let { BitmapFactory.decodeFile(it) }
-                        "asset" -> {
-                            val name = uri.path?.trimStart('/') ?: return null
-                            context.assets.open(name).use(BitmapFactory::decodeStream)
-                        }
-                        else -> {
-                            val stream: InputStream? = context.contentResolver.openInputStream(uri)
-                            stream?.use { BitmapFactory.decodeStream(it) }
-                        }
-                    }
+        return when (image) {
+            is BackgroundImage.Bundled -> context.assets.open(image.name)
+            is BackgroundImage.Uri -> {
+                val uri = Uri.parse(image.uri)
+                when (uri.scheme) {
+                    "file" -> uri.path?.let { FileInputStream(it) }
+                    "asset" -> uri.path?.trimStart('/')?.let { context.assets.open(it) }
+                    else -> context.contentResolver.openInputStream(uri)
                 }
             }
+        }
+    }
+
+    /**
+     * Decodes [image] downsampled toward [targetWidth] x [targetHeight] via
+     * `inSampleSize`, so a multi-megapixel source never materialises at full
+     * resolution. The bundled backgrounds are ~9 MP JPEGs (~36 MB as
+     * ARGB_8888) — decoding them raw is an OOM risk on low-RAM devices, and the
+     * scale-down happens just outside the compose `runCatching`, so it would
+     * crash the WebRTC capture thread rather than fall back to the raw frame.
+     * Two passes: bounds first, then the sub-sampled decode.
+     */
+    private fun decodeBackground(image: BackgroundImage, targetWidth: Int, targetHeight: Int): Bitmap? =
+        runCatching {
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            openBackgroundStream(image)?.use { BitmapFactory.decodeStream(it, null, bounds) }
+            val opts = BitmapFactory.Options().apply {
+                inSampleSize = computeSampleSize(bounds.outWidth, bounds.outHeight, targetWidth, targetHeight)
+            }
+            openBackgroundStream(image)?.use { BitmapFactory.decodeStream(it, null, opts) }
         }.onFailure { Log.d(TAG, "decodeBackground failed: $it") }
             .getOrNull()
+
+    /** Largest power-of-two sub-sample that stays >= the target dimensions. */
+    private fun computeSampleSize(srcW: Int, srcH: Int, dstW: Int, dstH: Int): Int {
+        if (srcW <= 0 || srcH <= 0 || dstW <= 0 || dstH <= 0) return 1
+        var sample = 1
+        while (srcW / (sample * 2) >= dstW && srcH / (sample * 2) >= dstH) sample *= 2
+        return sample
     }
 
     private fun maskToAlphaBitmap(mask: SegmentationMask, targetWidth: Int, targetHeight: Int): Bitmap? {

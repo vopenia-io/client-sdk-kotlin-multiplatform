@@ -7,6 +7,7 @@ import io.vopenia.livekit.participant.data.DataPacket
 import io.vopenia.livekit.participant.devices.AudioInputDevice
 import io.vopenia.livekit.participant.devices.CameraDevice
 import io.vopenia.livekit.participant.effects.VideoEffect
+import io.vopenia.livekit.participant.video.NativeAspectCaptureFormat
 import io.vopenia.livekit.participant.video.VideoResolutionPreset
 import io.vopenia.livekit.effects.VideoEffectProcessor
 import io.vopenia.livekit.effects.VideoProcessorAttacher
@@ -34,7 +35,6 @@ import io.livekit.android.room.datastream.TextStreamInfo
 import io.livekit.android.room.participant.VideoTrackPublishOptions
 import io.livekit.android.room.track.DataPublishReliability
 import io.livekit.android.room.track.LocalVideoTrackOptions
-import io.livekit.android.room.track.VideoPreset169
 import io.vopenia.livekit.Sdk
 import io.vopenia.livekit.participant.track.Source
 import io.vopenia.livekit.participant.track.toLkSource
@@ -46,6 +46,10 @@ import livekit.org.webrtc.Camera2Capturer
 import java.util.UUID
 import io.livekit.android.room.participant.LocalParticipant as LP
 import io.livekit.android.room.track.LocalVideoTrack as LkLocalVideoTrack
+
+// Default camera capture height (landscape px). Width follows the sensor's
+// native aspect, so this preserves the prior ~720p quality while fixing FOV.
+private const val DEFAULT_CAPTURE_HEIGHT = 720
 
 class InternalLocalParticipant(
     scope: CoroutineScope,
@@ -269,6 +273,16 @@ class InternalLocalParticipant(
 
     override suspend fun enableCamera(enabled: Boolean, device: CameraDevice?) {
         PermissionsController.checkOrProvide(Permission.CAMERA)
+        if (enabled) {
+            // Configure native-aspect capture BEFORE the track is created (via the
+            // capture defaults), so it is born at the sensor's native aspect instead
+            // of LiveKit's fixed 16:9 default — which crops 4:3 sensors and makes the
+            // camera look "zoomed in". Done via defaults rather than restartTrack():
+            // a live restartTrack disposes the MediaStreamTrack and races LiveKit's
+            // metrics collector ("MediaStreamTrack has been disposed"). See
+            // NativeAspectCaptureFormat.
+            applyNativeAspectDefaults()
+        }
         localParticipant.setCameraEnabled(enabled)
         if (enabled && device != null) {
             findCameraTrack()?.switchCamera(device.id, null)
@@ -276,31 +290,58 @@ class InternalLocalParticipant(
     }
 
     override suspend fun switchCamera() {
+        // switchCamera keeps the current captureParams (native aspect) and does not
+        // dispose the track, so no extra reconfiguration is needed.
         findCameraTrack()?.switchCamera(null, null)
     }
 
     // Remembered so a camera track published later in the call adopts the
-    // user's choice without an explicit re-call. Defaults to Standard (~360p).
+    // user's choice without an explicit re-call.
     @Volatile
     private var sendingResolutionPreset: VideoResolutionPreset = VideoResolutionPreset.Standard
 
+    // Target capture HEIGHT in landscape coordinates; the width follows the
+    // sensor's native aspect (NativeAspectCaptureFormat). Defaults to ~720 so
+    // capture quality matches the prior 16:9 720p behaviour — only the aspect
+    // changes. setMaxSendingResolution lowers it per preset.
+    @Volatile
+    private var captureHeightTarget: Int = DEFAULT_CAPTURE_HEIGHT
+
     override suspend fun setMaxSendingResolution(preset: VideoResolutionPreset) {
         sendingResolutionPreset = preset
-        val track = findCameraTrack() ?: return
-        val current = track.options
-        val updated = LocalVideoTrackOptions(
+        captureHeightTarget = preset.captureHeight()
+        // Apply to the capture defaults so the next camera track uses this
+        // resolution at the native aspect. We deliberately do not restartTrack() the
+        // live track (it races LiveKit's metrics collector and crashes the app); the
+        // change takes effect when the camera track is next (re)created.
+        applyNativeAspectDefaults()
+    }
+
+    /**
+     * Set the camera capture defaults to the selected camera's native aspect at
+     * [captureHeightTarget]. Applies to tracks created afterwards — no live
+     * restart, so it never disposes a published MediaStreamTrack.
+     */
+    private fun applyNativeAspectDefaults() {
+        val current = localParticipant.videoTrackCaptureDefaults
+        val params = NativeAspectCaptureFormat.compute(
+            Sdk.applicationContext, current.position, current.deviceId, captureHeightTarget
+        ) ?: return
+        if (current.captureParams.width == params.width &&
+            current.captureParams.height == params.height
+        ) return
+        localParticipant.videoTrackCaptureDefaults = LocalVideoTrackOptions(
             isScreencast = current.isScreencast,
             deviceId = current.deviceId,
             position = current.position,
-            captureParams = preset.toLkPreset().capture
+            captureParams = params,
         )
-        track.restartTrack(updated)
     }
 
-    private fun VideoResolutionPreset.toLkPreset(): VideoPreset169 = when (this) {
-        VideoResolutionPreset.Low -> VideoPreset169.H180
-        VideoResolutionPreset.Standard -> VideoPreset169.H360
-        VideoResolutionPreset.High -> VideoPreset169.H720
+    private fun VideoResolutionPreset.captureHeight(): Int = when (this) {
+        VideoResolutionPreset.Low -> 180
+        VideoResolutionPreset.Standard -> 360
+        VideoResolutionPreset.High -> 720
     }
 
     private fun findCameraTrack(): io.livekit.android.room.track.LocalVideoTrack? {

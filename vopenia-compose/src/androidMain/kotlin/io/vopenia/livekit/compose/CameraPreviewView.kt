@@ -12,6 +12,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import io.livekit.android.renderer.TextureViewRenderer
 import io.livekit.android.room.track.CameraPosition
+import io.vopenia.livekit.participant.video.NativeAspectCaptureFormat
 import livekit.org.webrtc.Camera1Enumerator
 import livekit.org.webrtc.Camera2Enumerator
 import livekit.org.webrtc.CameraVideoCapturer
@@ -83,7 +84,17 @@ actual fun CameraPreviewView(
                 }
             )
 
-            createdCapturer.startCapture(1280, 720, 30)
+            // Capture the preview at the sensor's native aspect (like the in-call
+            // track) so prejoin and the call show the same framing — not a 16:9
+            // crop that looks "zoomed in". Falls back to 1280x720 if unknown.
+            val nativeParams = NativeAspectCaptureFormat.compute(
+                context, cameraPosition, deviceName, 720
+            )
+            createdCapturer.startCapture(
+                nativeParams?.width ?: 1280,
+                nativeParams?.height ?: 720,
+                nativeParams?.maxFps ?: 30,
+            )
 
             capturer = createdCapturer
         }

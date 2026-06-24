@@ -14,14 +14,23 @@ import java.nio.ByteBuffer
 
 /**
  * Wraps MediaPipe Tasks Vision' ImageSegmenter configured for selfie
- * segmentation (person vs background). Tries the GPU delegate first
- * and falls back to CPU on failure. The model lives at
- * `androidMain/assets/selfie_segmenter.tflite` (~244 KB float16).
+ * segmentation (person vs background). Runs on the **CPU delegate only**.
+ *
+ * The GPU (OpenCL) delegate aborts natively during result read-back on some
+ * older GPUs — observed on the Galaxy S9 (Mali-G72): a `SIGABRT` deep inside
+ * `PacketGetter.getImageWidthFromImageList` while `ImageSegmenter.convertToTaskResult`
+ * reads the GPU output packet. It is a native abort on MediaPipe's internal
+ * task-runner thread, so no Kotlin `try/catch` can intercept it — it kills the
+ * whole process. The delegate *creates* fine, then crashes only at inference,
+ * so a "try GPU, fall back on failure" scheme can't catch it either.
+ *
+ * The model is tiny (~244 KB float16 at `androidMain/assets/selfie_segmenter.tflite`)
+ * and MediaPipe resizes the input to the model's fixed resolution, so CPU
+ * inference is real-time and stable across the device range.
  */
 internal class MediaPipeSegmenter {
 
-    private val segmenter: ImageSegmenter? = createSegmenter(Delegate.GPU)
-        ?: createSegmenter(Delegate.CPU)
+    private val segmenter: ImageSegmenter? = createSegmenter(Delegate.CPU)
 
     private fun createSegmenter(delegate: Delegate): ImageSegmenter? = runCatching {
         val baseOptions = BaseOptions.builder()

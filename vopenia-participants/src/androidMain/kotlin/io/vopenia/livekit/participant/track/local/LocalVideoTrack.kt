@@ -10,10 +10,16 @@ actual class LocalVideoTrack(
     track: LocalTrackPublication
 ) : LocalTrack(scope, track), IVideoTrack {
     actual override fun addRenderer(videoSink: VideoSink) {
-        println("VideoView -> addRenderer called ${track.track}")
         track.track?.let {
             if (it is VideoTrack) {
-                it.addRenderer(videoSink)
+                // Render the local self-view from the post-VideoSource rtcTrack rather
+                // than LiveKit's addRenderer(). addRenderer() registers the sink on the
+                // CaptureDispatchObserver, which feeds local renderers the RAW capturer
+                // frame — upstream of the VideoSource and therefore of our VideoProcessor.
+                // So any effect (background replacement, blur) stays invisible locally
+                // while remote peers see it. rtcTrack sits downstream of the source, so
+                // the preview shows exactly what is published.
+                it.rtcTrack.addSink(videoSink)
             }
         }
     }
@@ -21,7 +27,7 @@ actual class LocalVideoTrack(
     actual override fun removeRenderer(videoSink: VideoSink) {
         track.track?.let {
             if (it is VideoTrack) {
-                it.removeRenderer(videoSink)
+                it.rtcTrack.removeSink(videoSink)
             }
         }
     }
