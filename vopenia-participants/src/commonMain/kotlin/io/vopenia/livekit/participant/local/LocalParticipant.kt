@@ -3,6 +3,7 @@ package io.vopenia.livekit.participant.local
 import io.vopenia.livekit.participant.Participant
 import io.vopenia.livekit.participant.chat.ChatMessage
 import io.vopenia.livekit.participant.devices.AudioInputDevice
+import io.vopenia.livekit.participant.devices.AudioRoute
 import io.vopenia.livekit.participant.devices.CameraDevice
 import io.vopenia.livekit.participant.effects.VideoEffect
 import io.vopenia.livekit.participant.track.local.LocalAudioTrack
@@ -55,6 +56,32 @@ abstract class LocalParticipant(scope: CoroutineScope) :
         // option set if the microphone is currently active. The default
         // updates state only — used by JVM.
     }
+
+    // ---- Audio output routing ---------------------------------------------
+
+    protected val audioRouteState = MutableStateFlow(AudioRoute.Speaker)
+
+    /**
+     * Current in-call audio output route. Defaults to [AudioRoute.Speaker] (the
+     * external loudspeaker) — the usual choice for a video call.
+     */
+    val audioRoute: StateFlow<AudioRoute> = audioRouteState.asStateFlow()
+
+    protected val bluetoothConnectedState = MutableStateFlow(false)
+
+    /**
+     * Whether a Bluetooth headset is currently connected and usable for the
+     * call. Drives the UI (Bluetooth glyph on the audio button) and the toggle
+     * target — Bluetooth replaces the earpiece pole while connected.
+     */
+    val bluetoothConnected: StateFlow<Boolean> = bluetoothConnectedState.asStateFlow()
+
+    /**
+     * Route call audio to [route]. Platform implementations switch the native
+     * audio session/device (output and, where applicable, mic input) and toggle
+     * the proximity sensor (on only for [AudioRoute.Earpiece]). No-op on JVM.
+     */
+    abstract suspend fun setAudioRoute(route: AudioRoute)
 
     suspend fun enableMicrophone(enabled: Boolean) = enableMicrophone(enabled, null)
 

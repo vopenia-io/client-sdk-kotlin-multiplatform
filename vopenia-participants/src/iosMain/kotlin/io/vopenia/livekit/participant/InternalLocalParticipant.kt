@@ -6,8 +6,8 @@ import LiveKitClientKotlin.BbbaNoiseFilterKotlin
 import LiveKitClientKotlin.DelegateKotlin
 import LiveKitClientKotlin.LocalParticipantKotlin
 import io.vopenia.livekit.participant.effects.BackgroundImage
+import io.vopenia.livekit.participant.effects.loadBackgroundUiImage
 import platform.Foundation.NSBundle
-import platform.UIKit.UIImage
 import io.vopenia.livekit.NSErrorException
 import io.vopenia.livekit.participant.chat.ChatMessage
 import io.vopenia.livekit.participant.chat.ChatMessageProto
@@ -15,6 +15,7 @@ import io.vopenia.livekit.participant.chat.ChatTopics
 import io.vopenia.livekit.participant.data.DataPacket
 import io.vopenia.livekit.participant.delegate.LocalParticipantDelegate
 import io.vopenia.livekit.participant.devices.AudioInputDevice
+import io.vopenia.livekit.participant.devices.AudioRoute
 import io.vopenia.livekit.participant.devices.CameraDevice
 import io.vopenia.livekit.participant.effects.VideoEffect
 import io.vopenia.livekit.participant.video.VideoResolutionPreset
@@ -240,6 +241,40 @@ class InternalLocalParticipant(
         }
     }
 
+    // Seed the Bluetooth-connected state and observe AVAudioSession route changes
+    // (headset connect/disconnect). The app (RoomModel) reacts to the flow to
+    // auto-route to/from Bluetooth.
+    init {
+        bluetoothConnectedState.value = LocalParticipantKotlin.isBluetoothConnected()
+        LocalParticipantKotlin.startAudioRouteObserverOnChange {
+            bluetoothConnectedState.value = LocalParticipantKotlin.isBluetoothConnected()
+        }
+    }
+
+    override suspend fun setAudioRoute(route: AudioRoute) {
+        // NOTE: do NOT touch UIDevice.isProximityMonitoringEnabled here. Under
+        // CallKit it does nothing AND fights the system — it was the source of the
+        // 2-3 s blanking lag. CallKit drives the proximity sensor itself from the
+        // AVAudioSession MODE: .voiceChat (earpiece) turns it ON, .videoChat
+        // (speaker) turns it OFF — natively/instantly, like the Phone app. The mode
+        // is set per route in the Swift setAudioOutput bridge.
+        audioRouteState.value = route
+
+        val swiftRoute = when (route) {
+            AudioRoute.Speaker -> "speaker"
+            AudioRoute.Earpiece -> "earpiece"
+            AudioRoute.Bluetooth -> "bluetooth"
+        }
+        runCatching {
+            suspendCoroutine { continuation ->
+                LocalParticipantKotlin.setAudioOutputWithRoute(swiftRoute) { error ->
+                    if (null != error) continuation.resumeWithException(NSErrorException(error))
+                    else continuation.resume(Unit)
+                }
+            }
+        }.onFailure { println("setAudioRoute failed: $it") }
+    }
+
     override suspend fun enableCamera(enabled: Boolean, device: CameraDevice?) {
         PermissionsController.checkOrProvide(Permission.CAMERA)
         val position = when {
@@ -324,7 +359,7 @@ class InternalLocalParticipant(
                 }
             }
             is VideoEffect.Background -> {
-                val uiImage = loadUiImage(effect.image)
+                val uiImage = loadBackgroundUiImage(effect.image)
                 if (uiImage == null) {
                     println("setVideoEffect: failed to load background image ${effect.image}")
                     return
@@ -339,19 +374,6 @@ class InternalLocalParticipant(
                     }
                 }
             }
-        }
-    }
-
-    private fun loadUiImage(image: BackgroundImage): UIImage? = when (image) {
-        is BackgroundImage.Bundled -> UIImage.imageNamed(image.name)
-        is BackgroundImage.Uri -> {
-            val raw = image.uri
-            val path = when {
-                raw.startsWith("file://") -> raw.removePrefix("file://")
-                raw.startsWith("/") -> raw
-                else -> null
-            }
-            path?.let { UIImage(contentsOfFile = it) }
         }
     }
 

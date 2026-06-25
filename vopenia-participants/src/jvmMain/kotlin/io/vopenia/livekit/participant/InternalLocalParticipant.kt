@@ -33,6 +33,10 @@ class InternalLocalParticipant(
         // not available
     }
 
+    override suspend fun setAudioRoute(route: io.vopenia.livekit.participant.devices.AudioRoute) {
+        // not available on JVM
+    }
+
     override suspend fun enableCamera(enabled: Boolean, device: CameraDevice?) {
         // not available
     }
