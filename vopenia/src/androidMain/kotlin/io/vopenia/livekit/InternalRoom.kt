@@ -10,6 +10,7 @@ import io.vopenia.sdk.utils.Log
 import io.livekit.android.LiveKit
 import io.livekit.android.LiveKitOverrides
 import io.livekit.android.AudioOptions
+import io.livekit.android.audio.AudioSwitchHandler
 import io.vopenia.livekit.audio.BbbaNoiseReduction
 import io.livekit.android.annotations.Beta
 import io.livekit.android.events.RoomEvent
@@ -34,17 +35,26 @@ internal actual class InternalRoom actual constructor(
     // Register the BigBlueBetterAudio capture-post noise processor at Room
     // creation (the only point where audio processing can be injected). It is
     // a pass-through until LocalParticipant.setNoiseReduction(true) enables it.
+    // Our own AudioSwitchHandler so in-call audio output routing
+    // (speaker / earpiece / bluetooth) is under our control. LiveKit's default
+    // handler auto-routes and would fight manual AudioManager calls; we drive
+    // this one via selectDevice() from InternalLocalParticipant.setAudioRoute and
+    // read its device list to detect a connected Bluetooth / wired headset.
+    private val audioSwitchHandler = AudioSwitchHandler(Sdk.applicationContext)
+
     private val room = LiveKit.create(
         Sdk.applicationContext,
         overrides = LiveKitOverrides(
             audioOptions = AudioOptions(
-                audioProcessorOptions = BbbaNoiseReduction.audioProcessorOptions()
+                audioProcessorOptions = BbbaNoiseReduction.audioProcessorOptions(),
+                audioHandler = audioSwitchHandler,
             )
         )
     )
     actual val localParticipant: LocalParticipant = InternalLocalParticipant(
         scope,
-        room.localParticipant
+        room.localParticipant,
+        audioSwitchHandler,
     ).also { it.registerChatTextStream(room) }
 
     internal fun initVideoRenderer(textureViewRenderer: TextureViewRenderer) {

@@ -36,12 +36,20 @@ import io.livekit.android.room.participant.VideoTrackPublishOptions
 import io.livekit.android.room.track.DataPublishReliability
 import io.livekit.android.room.track.LocalVideoTrackOptions
 import io.vopenia.livekit.Sdk
+import io.vopenia.livekit.participant.devices.AudioRoute
 import io.vopenia.livekit.participant.track.Source
 import io.vopenia.livekit.participant.track.toLkSource
+import io.livekit.android.audio.AudioSwitchHandler
+import com.twilio.audioswitch.AudioDevice
+import android.annotation.SuppressLint
+import android.content.Context
+import android.os.PowerManager
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import livekit.org.webrtc.Camera2Capturer
 import java.util.UUID
 import io.livekit.android.room.participant.LocalParticipant as LP
@@ -53,7 +61,8 @@ private const val DEFAULT_CAPTURE_HEIGHT = 720
 
 class InternalLocalParticipant(
     scope: CoroutineScope,
-    private val localParticipant: LP
+    private val localParticipant: LP,
+    private val audioSwitchHandler: AudioSwitchHandler,
 ) : LocalParticipant(scope) {
     override val stateFlow: MutableStateFlow<LocalParticipantState> = MutableStateFlow(
         LocalParticipantState(
@@ -69,6 +78,29 @@ class InternalLocalParticipant(
     // which happens AFTER InternalLocalParticipant is created.
     override val identity: String?
         get() = localParticipant.identity?.value
+
+    init {
+        // Prefer the loudspeaker over the earpiece by default (our product default
+        // is Speaker). AudioSwitch's stock order puts Earpiece first, which would
+        // make calls start on the receiver. A connected BT / wired headset still
+        // wins. Explicit setAudioRoute() overrides this any time.
+        audioSwitchHandler.preferredDeviceList = listOf(
+            AudioDevice.BluetoothHeadset::class.java,
+            AudioDevice.WiredHeadset::class.java,
+            AudioDevice.Speakerphone::class.java,
+            AudioDevice.Earpiece::class.java,
+        )
+        // Reflect a connected Bluetooth / wired headset into bluetoothConnectedState
+        // so the UI shows the BT glyph and the toggle targets Bluetooth. AudioSwitch
+        // reports the available device list; a BT or wired headset counts as an
+        // external headset. Set before LiveKit calls handler.start() so the first
+        // device callback (on connect) reaches us.
+        audioSwitchHandler.audioDeviceChangeListener = { devices, _ ->
+            bluetoothConnectedState.value = devices.any {
+                it is AudioDevice.BluetoothHeadset || it is AudioDevice.WiredHeadset
+            }
+        }
+    }
 
     init {
         scope.launch {
@@ -248,6 +280,51 @@ class InternalLocalParticipant(
             applyCommunicationDevice(device)
         }
         localParticipant.setMicrophoneEnabled(enabled)
+    }
+
+    // Drive LiveKit's AudioSwitchHandler (injected, see InternalRoom) rather than
+    // poking AudioManager directly, which the handler would override. selectDevice
+    // does both output and mic; it handles the API-29 legacy path (S9) internally.
+    // Proximity is our own wake lock, on only for the earpiece.
+    override suspend fun setAudioRoute(route: AudioRoute) {
+        // Select from the live device list — Twilio's AudioDevice constructors are
+        // internal, and the built-in Speakerphone/Earpiece are always present once
+        // the handler has started.
+        val devices = audioSwitchHandler.availableAudioDevices
+        val target: AudioDevice? = when (route) {
+            AudioRoute.Speaker -> devices.firstOrNull { it is AudioDevice.Speakerphone }
+            AudioRoute.Earpiece -> devices.firstOrNull { it is AudioDevice.Earpiece }
+            AudioRoute.Bluetooth -> devices.firstOrNull { it is AudioDevice.BluetoothHeadset }
+        }
+        if (target == null) {
+            Log.d("LocalParticipant", "setAudioRoute($route): no matching audio device")
+        } else {
+            // Audio routing touches AudioManager — do it on the main thread.
+            withContext(Dispatchers.Main) {
+                runCatching { audioSwitchHandler.selectDevice(target) }
+                    .onFailure { Log.d("LocalParticipant", "selectDevice failed: $it") }
+            }
+        }
+        updateProximityWakeLock(route == AudioRoute.Earpiece)
+        audioRouteState.value = route
+    }
+
+    // PROXIMITY_SCREEN_OFF_WAKE_LOCK: blanks the screen when the phone is held to
+    // the ear, but only while routed to the earpiece (never speaker/bluetooth).
+    private var proximityWakeLock: PowerManager.WakeLock? = null
+
+    @SuppressLint("WakelockTimeout") // released explicitly when leaving the earpiece / on disconnect
+    private fun updateProximityWakeLock(enable: Boolean) {
+        val context = runCatching { Sdk.applicationContext }.getOrNull() ?: return
+        val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager ?: return
+        if (enable) {
+            val lock = proximityWakeLock ?: runCatching {
+                powerManager.newWakeLock(PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK, "vopenia:proximity")
+            }.getOrNull()?.also { proximityWakeLock = it }
+            if (lock != null && !lock.isHeld) runCatching { lock.acquire() }
+        } else {
+            proximityWakeLock?.takeIf { it.isHeld }?.let { runCatching { it.release() } }
+        }
     }
 
     private fun applyCommunicationDevice(device: AudioInputDevice): Boolean {

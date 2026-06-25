@@ -2,6 +2,7 @@ package io.vopenia.livekit.compose
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.currentCompositeKeyHash
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -12,7 +13,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import io.livekit.android.renderer.TextureViewRenderer
 import io.livekit.android.room.track.CameraPosition
+import io.vopenia.livekit.effects.PreviewVideoEffect
+import io.vopenia.livekit.participant.effects.VideoEffect
 import io.vopenia.livekit.participant.video.NativeAspectCaptureFormat
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import livekit.org.webrtc.Camera1Enumerator
 import livekit.org.webrtc.Camera2Enumerator
 import livekit.org.webrtc.CameraVideoCapturer
@@ -21,12 +26,15 @@ import livekit.org.webrtc.EglBase
 import livekit.org.webrtc.RendererCommon
 import livekit.org.webrtc.SurfaceTextureHelper
 import livekit.org.webrtc.VideoFrame
+import livekit.org.webrtc.VideoSink
+import java.util.concurrent.atomic.AtomicReference
 
 @Composable
 actual fun CameraPreviewView(
     modifier: Modifier,
     scaleType: ScaleType,
     isMirror: Boolean,
+    effect: VideoEffect?,
 ) {
     val cameraPosition = CameraPosition.FRONT
     val context = LocalContext.current
@@ -41,6 +49,38 @@ actual fun CameraPreviewView(
     }
 
     var view: TextureViewRenderer? by remember { mutableStateOf(null) }
+
+    // Preview effect pipeline (WYSIWYG prejoin). The processor is created lazily —
+    // only once an effect is actually selected — because constructing it eagerly
+    // loads the MediaPipe segmentation model synchronously (~1-2s), which would
+    // jank the prejoin screen and waste CPU/battery for users who never pick an
+    // effect (matters on low-end devices like the S9). While no processor exists,
+    // frames go straight to the renderer (the original path). Held in an
+    // AtomicReference so the capture-thread observer reads it without restarting
+    // the capturer when the effect changes.
+    val processorRef = remember { AtomicReference<PreviewVideoEffect?>(null) }
+
+    LaunchedEffect(effect, view) {
+        // Reuse an existing processor, or create one the first time an effect is
+        // picked (built off the main thread — the model load is synchronous).
+        val processor = processorRef.get()
+            ?: if (effect != null) {
+                withContext(Dispatchers.Default) { PreviewVideoEffect() }
+            } else {
+                null
+            }
+        processor?.let {
+            it.setSink(view?.let { renderer -> VideoSink { frame -> renderer.onFrame(frame) } })
+            it.setEffect(effect)
+            // Publish only after it is fully configured so the capture-thread
+            // observer never sees a half-wired processor.
+            processorRef.set(it)
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose { processorRef.getAndSet(null)?.close() }
+    }
 
     DisposableEffect(cameraPosition) {
         val deviceName = cameraEnumerator
@@ -80,7 +120,17 @@ actual fun CameraPreviewView(
 
                     override fun onCapturerStopped() = Unit
 
-                    override fun onFrameCaptured(frame: VideoFrame) = view?.onFrame(frame) ?: Unit
+                    override fun onFrameCaptured(frame: VideoFrame) {
+                        // Route through the effect processor when present (it
+                        // forwards frames unchanged while no effect is set);
+                        // otherwise straight to the renderer.
+                        val processor = processorRef.get()
+                        if (processor != null) {
+                            processor.onFrameCaptured(frame)
+                        } else {
+                            view?.onFrame(frame)
+                        }
+                    }
                 }
             )
 
