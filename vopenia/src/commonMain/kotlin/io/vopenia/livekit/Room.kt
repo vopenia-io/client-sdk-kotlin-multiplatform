@@ -45,12 +45,18 @@ class Room {
         token: String,
         enableMicrophone: Boolean = true
     ) {
-        if (!PermissionsController.isGranted(Permission.RECORD_AUDIO)) {
-            PermissionsController.providePermission(Permission.RECORD_AUDIO)
-        }
+        // Only require the microphone permission when the caller actually wants to
+        // publish audio. A camera-only / listen-only join must be able to connect
+        // without RECORD_AUDIO (Meet-web parity) instead of failing here — the
+        // permission would otherwise be requested even for enableMicrophone = false.
+        if (enableMicrophone) {
+            if (!PermissionsController.isGranted(Permission.RECORD_AUDIO)) {
+                PermissionsController.providePermission(Permission.RECORD_AUDIO)
+            }
 
-        if (!PermissionsController.isGranted(Permission.RECORD_AUDIO)) {
-            throw PermissionRefused(Permission.RECORD_AUDIO)
+            if (!PermissionsController.isGranted(Permission.RECORD_AUDIO)) {
+                throw PermissionRefused(Permission.RECORD_AUDIO)
+            }
         }
 
         internalRoom.connect(url, token, enableMicrophone)
