@@ -24,4 +24,13 @@ actual class RemoteVideoTrack(
         Log.d("RemoteVideoTrack", "removeRenderer")
         delegate.removeWithVideoView(videoSink.videoView)
     }
+
+    /**
+     * The underlying native LiveKit `VideoTrack` for an AVKit sink (Picture-in-
+     * Picture), returned as an opaque [platform.darwin.NSObject] so NO LiveKit type
+     * leaks into the consuming framework header / cinterop (that leak is what broke
+     * the earlier bridge-based attempt). iosApp casts it back to `VideoTrack`. Same
+     * handle [addRenderer] attaches to; null until the track is subscribed.
+     */
+    fun nativeVideoTrack(): platform.darwin.NSObject? = track.track()
 }
