@@ -31,7 +31,30 @@ class RoomDelegate(
 ) {
     private val delegateWrapper = DelegateKotlin()
     private val connectOptions = ConnectOptions()
-    private val roomOptions = RoomOptions()
+    // suspendLocalVideoTracksInBackground defaults to true, which makes LiveKit
+    // suspend (mute) the local camera when the app backgrounds — so on iOS the caller
+    // goes mute for everyone else while the call floats in Picture-in-Picture. Turn it
+    // off so the camera keeps publishing; the iOS app additionally enables the
+    // AVCaptureSession's multitasking-camera access so the hardware isn't interrupted.
+    //
+    // The sub-options are REUSED from a default RoomOptions() (built in Swift) rather
+    // than constructed here: calling ScreenShareCaptureOptions()/CameraCaptureOptions()
+    // etc. from Kotlin/Native hits unimplemented initializers and crashes at runtime.
+    private val defaultRoomOptions = RoomOptions()
+    private val roomOptions = RoomOptions(
+        defaultCameraCaptureOptions = defaultRoomOptions.defaultCameraCaptureOptions(),
+        defaultScreenShareCaptureOptions = defaultRoomOptions.defaultScreenShareCaptureOptions(),
+        defaultAudioCaptureOptions = defaultRoomOptions.defaultAudioCaptureOptions(),
+        defaultVideoPublishOptions = defaultRoomOptions.defaultVideoPublishOptions(),
+        defaultAudioPublishOptions = defaultRoomOptions.defaultAudioPublishOptions(),
+        defaultDataPublishOptions = defaultRoomOptions.defaultDataPublishOptions(),
+        adaptiveStream = false,
+        dynacast = false,
+        stopLocalTrackOnUnpublish = true,
+        suspendLocalVideoTracksInBackground = false,
+        e2eeOptions = null,
+        reportRemoteTrackStatistics = false,
+    )
     internal val room: Room = Room(null, connectOptions, roomOptions)
     private val participants = MutableStateFlow<List<InternalRemoteParticipant>>(emptyList())
 
