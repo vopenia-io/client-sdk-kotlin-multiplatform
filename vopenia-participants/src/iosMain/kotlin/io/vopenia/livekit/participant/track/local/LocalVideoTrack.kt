@@ -25,4 +25,13 @@ actual class LocalVideoTrack(
             delegate.removeWithVideoView(videoSink.videoView)
         }
     }
+
+    /**
+     * The underlying native LiveKit `VideoTrack` for an AVKit sink (Picture-in-
+     * Picture), as an opaque [platform.darwin.NSObject] so no LiveKit type leaks into
+     * the consuming framework header. Mirrors `RemoteVideoTrack.nativeVideoTrack`;
+     * used for the local "you" tile in the iOS call PiP. Null until the camera track
+     * is published.
+     */
+    fun nativeVideoTrack(): platform.darwin.NSObject? = track.track()
 }
