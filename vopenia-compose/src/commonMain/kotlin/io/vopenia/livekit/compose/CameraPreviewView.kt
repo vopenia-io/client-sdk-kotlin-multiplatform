@@ -1,0 +1,13 @@
+package io.vopenia.livekit.compose
+
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import io.vopenia.livekit.participant.effects.VideoEffect
+
+@Composable
+expect fun CameraPreviewView(
+    modifier: Modifier,
+    scaleType: ScaleType,
+    isMirror: Boolean = false,
+    effect: VideoEffect? = null,
+)

@@ -14,8 +14,40 @@ enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 def commonProps = new Properties()
 new File(rootProject.projectDir, "gradle.properties").withInputStream { commonProps.load(it) }
 ext.GRADLE_EXTENDED_VERSION_USED = commonProps.getProperty("GRADLE_EXTENDED_VERSION_USED")
+ext.FORCED_KOTLIN_VERSION = commonProps.getProperty("forcedKotlinVersion")
+ext.FORCED_AGP_VERSION = commonProps.getProperty("forcedAndroidGradlePluginVersion")
+ext.FORCED_COMPOSE_MULTIPLATFORM_VERSION = commonProps.getProperty("forcedComposeMultiplatformVersion")
 
 apply from: "https://raw.githubusercontent.com/the-inkwell/gradle-tools/${ext.GRADLE_EXTENDED_VERSION_USED}/extended.gradle"
+
+def replaceCatalogVersion = { File catalogFile, String key, String version ->
+    if (!version) {
+        return false
+    }
+
+    def currentContent = catalogFile.getText("UTF-8")
+    def pattern = java.util.regex.Pattern.compile("(?m)^" + java.util.regex.Pattern.quote(key) + " = \"([^\"]*)\"\$")
+    def matcher = pattern.matcher(currentContent)
+
+    if (!matcher.find()) {
+        throw new GradleException("Unable to force ${key} in ${catalogFile}")
+    }
+
+    if (matcher.group(1) == version) {
+        return false
+    }
+
+    def updatedContent = matcher.replaceFirst("${key} = \"${version}\"")
+    catalogFile.write(updatedContent, "UTF-8")
+    return true
+}
+
+if (ext.FORCED_KOTLIN_VERSION || ext.FORCED_AGP_VERSION || ext.FORCED_COMPOSE_MULTIPLATFORM_VERSION) {
+    def catalogFile = new File(gradle.extended.files.catalog)
+    replaceCatalogVersion(catalogFile, "kotlin", ext.FORCED_KOTLIN_VERSION)
+    replaceCatalogVersion(catalogFile, "androidGradlePlugin", ext.FORCED_AGP_VERSION)
+    replaceCatalogVersion(catalogFile, "jetbrains-compose", ext.FORCED_COMPOSE_MULTIPLATFORM_VERSION)
+}
 
 dependencyResolutionManagement {
     repositories {

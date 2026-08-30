@@ -25,6 +25,7 @@ kotlin {
             framework {
                 //transitiveExport = true
                 baseName = "KotlinLibrary"
+                isStatic = true
             }
         }
     }
@@ -47,6 +48,20 @@ kotlin {
             version = "2.6.0"
             moduleName = "LiveKitClient"
             packageName = "LiveKitClient"
+            extraOpts += listOf("-compiler-option", "-fmodules")
+        }
+
+        // BigBlueBetterAudio C/C++ core + iOS ObjC++ façade. Lives in its own
+        // pod (rooted at the BigBlueBetterAudio repo top) because CocoaPods
+        // rejects `../`-relative source paths. LiveKitClientKotlin depends on
+        // it transitively via the podspec — we declare it here so the synthetic
+        // Podfile picks the local sibling checkout instead of trying to fetch
+        // BBBACore from a podspec repo (which doesn't exist).
+        pod("BBBACore") {
+            version = "1.0.0"
+            source = path(rootProject.file("../BigBlueBetterAudio"))
+            moduleName = "BBBACore"
+            packageName = "BBBACore"
             extraOpts += listOf("-compiler-option", "-fmodules")
         }
 
@@ -77,6 +92,9 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.livekit.android)
             api(additionals.androidx.fragment)
+            // MediaPipe Tasks Vision for selfie segmentation (GPU delegate
+            // via TFLite). The 244KB float16 model is bundled in androidMain/assets/.
+            implementation("com.google.mediapipe:tasks-vision:0.10.14")
         }
         jvmMain.dependencies {
             implementation(additionals.kotlinx.coroutines.jvm)
@@ -87,8 +105,23 @@ kotlin {
 android {
     namespace = "${rootProject.ext["namespace"]}.participants"
     compileSdk = additionals.versions.compileSdkVersion.get().toInt()
+    // NDK build of the BigBlueBetterAudio noise-suppression core (RNNoise +
+    // Faust chain) + JNI bridge -> libbbba.so. Sources live in the sibling
+    // BigBlueBetterAudio repo (override the location with -DBBBA_DIR=).
+    ndkVersion = "25.1.8937393"
     defaultConfig {
         minSdk = additionals.versions.minSdkVersion.get().toInt()
+        externalNativeBuild {
+            cmake {
+                abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
+            }
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path = file("src/androidMain/cpp/CMakeLists.txt")
+            version = "3.22.1"
+        }
     }
     compileOptions {
         sourceCompatibility = rootProject.ext["javaVersionObject"] as JavaVersion
@@ -103,7 +136,7 @@ buildkonfig {
         buildConfigField(
             FieldSpec.Type.STRING,
             "VERSION",
-            rootProject.ext["version"] as String,
+            rootProject.ext["version"].toString(),
             nullable = false,
             const = true
         )

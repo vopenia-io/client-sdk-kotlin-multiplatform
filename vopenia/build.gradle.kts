@@ -24,6 +24,10 @@ kotlin {
             framework {
                 //transitiveExport = true
                 baseName = "KotlinLibrary"
+                // Static so Kotlin/Native defers LiveKit framework resolution
+                // to the final consumer — this legacy framework has no search
+                // paths for the pods declared in the cocoapods block.
+                isStatic = true
             }
         }
     }
@@ -48,6 +52,17 @@ kotlin {
             version = "2.6.0"
             moduleName = "LiveKitClient"
             packageName = "LiveKitClient"
+            extraOpts += listOf("-compiler-option", "-fmodules")
+        }
+
+        // BBBACore must be declared everywhere LiveKitClientKotlin is —
+        // LiveKitClientKotlin.podspec depends on it but it lives outside any
+        // podspec repo (local sibling checkout).
+        pod("BBBACore") {
+            version = "1.0.0"
+            source = path(rootProject.file("../BigBlueBetterAudio"))
+            moduleName = "BBBACore"
+            packageName = "BBBACore"
             extraOpts += listOf("-compiler-option", "-fmodules")
         }
 
@@ -103,7 +118,7 @@ buildkonfig {
         buildConfigField(
             FieldSpec.Type.STRING,
             "VERSION",
-            rootProject.ext["version"] as String,
+            rootProject.ext["version"].toString(),
             nullable = false,
             const = true
         )

@@ -16,12 +16,15 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- Proximity wake lock: blanks the screen when the phone is at the ear while
+         routed to the earpiece (LocalParticipant.setAudioRoute). -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application>
 
         <provider
-            android:name="com.vopenia.livekit.HoldApplicationContext"
-            android:authorities="com.vopenia.livekit.HoldApplicationContext"
+            android:name="io.vopenia.livekit.HoldApplicationContext"
+            android:authorities="io.vopenia.livekit.HoldApplicationContext"
             android:enabled="true"
             android:exported="false" />
     </application>
