@@ -1,0 +1,98 @@
+package io.vopenia.livekit.room
+
+import LiveKitClient.ConnectionState
+import LiveKitClient.LiveKitError
+import LiveKitClient.Participant
+import LiveKitClient.RemoteParticipant
+import LiveKitClient.Room
+import LiveKitClient.RoomDelegateProtocol
+import io.vopenia.livekit.NSErrorException
+import io.vopenia.sdk.utils.Log
+import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.ObjCSignatureOverride
+import platform.darwin.NSObject
+import io.vopenia.livekit.events.ConnectionState as CS
+
+@OptIn(ExperimentalForeignApi::class)
+class RoomDelegateConnectionState(
+    private val onConnectionState: (CS) -> Unit,
+    private val onParticipantConnected: (RemoteParticipant) -> Unit,
+    private val onParticipantDisconnected: (RemoteParticipant) -> Unit,
+    private val onParticipantAttributesUpdated: (Participant, Map<String, String>) -> Unit,
+    private val onIsRecordingUpdated: (Boolean) -> Unit
+) : RoomDelegateProtocol, NSObject() {
+    override fun roomDidConnect(room: Room) {
+        Log.d("RoomDelegateConnectionState", "roomDidConnect")
+        onConnectionState(CS.Connected)
+    }
+
+    override fun roomDidReconnect(room: Room) {
+        Log.d("RoomDelegateConnectionState", "roomDidReconnect")
+        onConnectionState(CS.Connected)
+    }
+
+    override fun room(
+        room: Room,
+        didUpdateConnectionState: ConnectionState,
+        from: ConnectionState
+    ) {
+        Log.d("RoomDelegateConnectionState", "new state $didUpdateConnectionState")
+        when (didUpdateConnectionState) {
+            LiveKitClient.ConnectionStateConnected -> onConnectionState(CS.Connected)
+            LiveKitClient.ConnectionStateConnecting -> onConnectionState(CS.Connecting)
+            LiveKitClient.ConnectionStateDisconnected -> onConnectionState(CS.Disconnected)
+            LiveKitClient.ConnectionStateReconnecting -> onConnectionState(CS.Connecting)
+            else -> {
+                // nothing
+            }
+        }
+    }
+
+    @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
+    @ObjCSignatureOverride
+    override fun room(room: Room, didDisconnectWithError: LiveKitError?) {
+        if (null != didDisconnectWithError) {
+            onConnectionState(CS.ConnectionError(NSErrorException(didDisconnectWithError)))
+        } else {
+            onConnectionState(CS.Disconnected)
+        }
+    }
+
+    @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
+    @ObjCSignatureOverride
+    override fun room(room: Room, didFailToConnectWithError: LiveKitError?) {
+        if (null != didFailToConnectWithError) {
+            onConnectionState(CS.ConnectionError(NSErrorException(didFailToConnectWithError)))
+        } else {
+            // -> ? onConnectionState(CS.Disconnected)
+        }
+    }
+
+    @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
+    @ObjCSignatureOverride
+    override fun room(room: Room, participantDidConnect: RemoteParticipant) {
+        onParticipantConnected(participantDidConnect)
+    }
+
+    @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
+    @ObjCSignatureOverride
+    override fun room(room: Room, participantDidDisconnect: RemoteParticipant) {
+        onParticipantDisconnected(participantDidDisconnect)
+    }
+
+    @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE", "UNCHECKED_CAST")
+    @ObjCSignatureOverride
+    override fun room(
+        room: Room,
+        participant: Participant,
+        didUpdateAttributes: Map<Any?, *>
+    ) {
+        onParticipantAttributesUpdated(participant, didUpdateAttributes as Map<String, String>)
+    }
+
+    @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
+    @ObjCSignatureOverride
+    override fun room(room: Room, didUpdateIsRecording: Boolean) {
+        onIsRecordingUpdated(didUpdateIsRecording)
+    }
+}

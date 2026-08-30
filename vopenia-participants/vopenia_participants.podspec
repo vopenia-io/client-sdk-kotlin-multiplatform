@@ -12,27 +12,20 @@ Pod::Spec.new do |spec|
     spec.osx.deployment_target    = '16.0'
     spec.dependency 'LiveKitClient', '2.6.0'
     spec.dependency 'LiveKitClientKotlin', '2.6.0'
-                
     if !Dir.exist?('build/cocoapods/framework/vopenia_participants.framework') || Dir.empty?('build/cocoapods/framework/vopenia_participants.framework')
         raise "
-
         Kotlin framework 'vopenia_participants' doesn't exist yet, so a proper Xcode project can't be generated.
         'pod install' should be executed after running ':generateDummyFramework' Gradle task:
-
             ./gradlew :vopenia-participants:generateDummyFramework
-
         Alternatively, proper pod installation is performed during Gradle sync in the IDE (if Podfile location is set)"
     end
-                
     spec.xcconfig = {
         'ENABLE_USER_SCRIPT_SANDBOXING' => 'NO',
     }
-                
     spec.pod_target_xcconfig = {
         'KOTLIN_PROJECT_PATH' => ':vopenia-participants',
         'PRODUCT_MODULE_NAME' => 'vopenia_participants',
     }
-                
     spec.script_phases = [
         {
             :name => 'Build vopenia_participants',
@@ -40,8 +33,8 @@ Pod::Spec.new do |spec|
             :shell_path => '/bin/sh',
             :script => <<-SCRIPT
                 if [ "YES" = "$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED" ]; then
-                  echo "Skipping Gradle build task invocation due to OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED environment variable set to \"YES\""
-                  exit 0
+                    echo "Skipping Gradle build task invocation due to OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED environment variable set to \"YES\""
+                    exit 0
                 fi
                 set -ev
                 REPO_ROOT="$PODS_TARGET_SRCROOT"
@@ -52,5 +45,4 @@ Pod::Spec.new do |spec|
             SCRIPT
         }
     ]
-                
 end

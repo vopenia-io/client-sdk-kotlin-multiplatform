@@ -26,11 +26,11 @@ kotlin {
 }
 
 android {
-    namespace = "com.vopenia.tests.config"
+    namespace = "io.vopenia.tests.config"
 }
 
 buildkonfig {
-    packageName = "com.vopenia.tests.config"
+    packageName = "io.vopenia.tests.config"
 
     defaultConfigs {
         listOf(

@@ -1,0 +1,600 @@
+package io.vopenia.livekit.participant
+
+import io.vopenia.livekit.participant.chat.ChatMessage
+import io.vopenia.livekit.participant.chat.ChatMessageProto
+import io.vopenia.livekit.participant.chat.ChatTopics
+import io.vopenia.livekit.participant.data.DataPacket
+import io.vopenia.livekit.participant.devices.AudioInputDevice
+import io.vopenia.livekit.participant.devices.CameraDevice
+import io.vopenia.livekit.participant.effects.VideoEffect
+import io.vopenia.livekit.participant.video.NativeAspectCaptureFormat
+import io.vopenia.livekit.participant.video.VideoResolutionPreset
+import io.vopenia.livekit.effects.VideoEffectProcessor
+import io.vopenia.livekit.effects.VideoProcessorAttacher
+import io.vopenia.livekit.participant.local.LocalParticipant
+import io.vopenia.livekit.participant.local.LocalParticipantState
+import io.vopenia.livekit.screenshare.ScreenShareController
+import io.livekit.android.room.track.screencapture.ScreenCaptureParams
+import io.vopenia.livekit.participant.track.Kind
+import io.vopenia.livekit.participant.track.kindFrom
+import io.vopenia.livekit.participant.track.local.LocalAudioTrack
+import io.vopenia.livekit.participant.track.local.LocalNoneTrack
+import io.vopenia.livekit.participant.track.local.LocalTrack
+import io.vopenia.livekit.participant.track.local.LocalTrackPublication
+import io.vopenia.livekit.participant.track.local.LocalVideoTrack
+import io.vopenia.livekit.participant.track.toLocalTranscriptionSegment
+import io.vopenia.livekit.participant.transcription.TranscriptionSegment
+import io.vopenia.livekit.permissions.Permission
+import io.vopenia.livekit.permissions.PermissionsController
+import io.vopenia.sdk.utils.Log
+import io.livekit.android.events.ParticipantEvent
+import io.livekit.android.events.collect
+import io.livekit.android.room.Room
+import io.livekit.android.room.datastream.StreamTextOptions
+import io.livekit.android.room.datastream.TextStreamInfo
+import io.livekit.android.room.participant.VideoTrackPublishOptions
+import io.livekit.android.room.track.DataPublishReliability
+import io.livekit.android.room.track.LocalVideoTrackOptions
+import io.vopenia.livekit.Sdk
+import io.vopenia.livekit.participant.devices.AudioRoute
+import io.vopenia.livekit.participant.track.Source
+import io.vopenia.livekit.participant.track.toLkSource
+import io.livekit.android.audio.AudioSwitchHandler
+import com.twilio.audioswitch.AudioDevice
+import android.annotation.SuppressLint
+import android.content.Context
+import android.os.PowerManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import livekit.org.webrtc.Camera2Capturer
+import java.util.UUID
+import io.livekit.android.room.participant.LocalParticipant as LP
+import io.livekit.android.room.track.LocalVideoTrack as LkLocalVideoTrack
+
+// Default camera capture height (landscape px). Width follows the sensor's
+// native aspect, so this preserves the prior ~720p quality while fixing FOV.
+private const val DEFAULT_CAPTURE_HEIGHT = 720
+
+class InternalLocalParticipant(
+    scope: CoroutineScope,
+    private val localParticipant: LP,
+    private val audioSwitchHandler: AudioSwitchHandler,
+) : LocalParticipant(scope) {
+    override val stateFlow: MutableStateFlow<LocalParticipantState> = MutableStateFlow(
+        LocalParticipantState(
+            permissions = localParticipant.permissions?.let {
+                InternalParticipantPermissions(it).toMultiplatform()
+            } ?: ParticipantPermissions(),
+            attributes = localParticipant.attributes
+        )
+    )
+    override val transcriptsFlow = MutableSharedFlow<TranscriptionSegment>()
+
+    // Lazy getter — identity is assigned by the LiveKit server during connect,
+    // which happens AFTER InternalLocalParticipant is created.
+    override val identity: String?
+        get() = localParticipant.identity?.value
+
+    init {
+        // Prefer the loudspeaker over the earpiece by default (our product default
+        // is Speaker). AudioSwitch's stock order puts Earpiece first, which would
+        // make calls start on the receiver. A connected BT / wired headset still
+        // wins. Explicit setAudioRoute() overrides this any time.
+        audioSwitchHandler.preferredDeviceList = listOf(
+            AudioDevice.BluetoothHeadset::class.java,
+            AudioDevice.WiredHeadset::class.java,
+            AudioDevice.Speakerphone::class.java,
+            AudioDevice.Earpiece::class.java,
+        )
+        // Reflect a connected Bluetooth / wired headset into bluetoothConnectedState
+        // so the UI shows the BT glyph and the toggle targets Bluetooth. AudioSwitch
+        // reports the available device list; a BT or wired headset counts as an
+        // external headset. Set before LiveKit calls handler.start() so the first
+        // device callback (on connect) reaches us.
+        audioSwitchHandler.audioDeviceChangeListener = { devices, _ ->
+            bluetoothConnectedState.value = devices.any {
+                it is AudioDevice.BluetoothHeadset || it is AudioDevice.WiredHeadset
+            }
+        }
+    }
+
+    init {
+        scope.launch {
+            localParticipant.events.collect {
+                when (it) {
+                    is ParticipantEvent.DataReceived -> {
+                        handleDataReceived(it.data, it.topic, it.participant.identity?.value)
+                    }
+
+                    is ParticipantEvent.LocalTrackPublished -> {
+                        val (wrapper, new) = getOrCreate(it.publication)
+
+                        wrapper.setPublished(true)
+                        if (new) append(wrapper)
+                    }
+
+                    is ParticipantEvent.LocalTrackUnpublished -> {
+                        val (wrapper, new) = getOrCreate(it.publication)
+
+                        wrapper.setPublished(false)
+                        if (new) append(wrapper)
+                    }
+
+                    is ParticipantEvent.MetadataChanged -> {
+                        stateFlow.emit(stateFlow.value.copy(metadata = it.prevMetadata))
+                    }
+
+                    is ParticipantEvent.NameChanged -> {
+                        stateFlow.emit(stateFlow.value.copy(name = it.name))
+                    }
+
+                    is ParticipantEvent.ParticipantPermissionsChanged -> {
+                        it.newPermissions?.let { permissions ->
+                            stateFlow.emit(
+                                stateFlow.value.copy(
+                                    permissions = InternalParticipantPermissions(
+                                        permissions
+                                    ).toMultiplatform()
+                                )
+                            )
+                        }
+                    }
+
+                    is ParticipantEvent.SpeakingChanged -> {
+                        isSpeakingFlow.emit(it.isSpeaking)
+                    }
+
+                    is ParticipantEvent.TrackMuted -> {
+                        Log.d("LocalParticipant", "track is muted")
+                        val (wrapper, new) = getOrCreate(it.publication as LocalTrackPublication)
+
+                        wrapper.setMuted(true)
+                        if (new) append(wrapper)
+                    }
+
+                    is ParticipantEvent.TrackPublished -> {
+                        // TODO
+                    }
+
+                    is ParticipantEvent.TrackStreamStateChanged -> {
+                        // TODO
+                    }
+
+                    is ParticipantEvent.TrackSubscribed -> {
+                        // TODO
+                    }
+
+                    is ParticipantEvent.TrackSubscriptionFailed -> {
+                        // TODO
+                    }
+
+                    is ParticipantEvent.TrackSubscriptionPermissionChanged -> {
+                        // TODO
+                    }
+
+                    is ParticipantEvent.TrackUnmuted -> {
+                        val (wrapper, new) = getOrCreate(it.publication as LocalTrackPublication)
+
+                        wrapper.setMuted(false)
+                        if (new) append(wrapper)
+                    }
+
+                    is ParticipantEvent.TrackUnpublished -> {
+                        // TODO
+                    }
+
+                    is ParticipantEvent.TrackUnsubscribed -> {
+                        // TODO
+                    }
+
+                    is ParticipantEvent.AttributesChanged -> {
+                        stateFlow.emit(stateFlow.value.copy(attributes = localParticipant.attributes))
+                    }
+
+                    is ParticipantEvent.LocalTrackPublicationFailed -> {
+                        // TODO
+                    }
+
+                    is ParticipantEvent.LocalTrackSubscribed -> {
+                        // TODO
+                    }
+
+                    is ParticipantEvent.StateChanged -> {
+                        // TODO
+                    }
+
+                    is ParticipantEvent.TranscriptionReceived -> {
+                        it.transcriptions.forEach { transcript ->
+                            transcriptsFlow.emit(transcript.toLocalTranscriptionSegment())
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private suspend fun handleDataReceived(
+        data: ByteArray,
+        topic: String?,
+        senderIdentity: String?
+    ) {
+        dataReceivedFlowInternal.emit(DataPacket(data, topic, senderIdentity))
+        if (topic == ChatTopics.CHAT) {
+            runCatching { ChatMessageProto.decode(data, senderIdentity) }
+                .getOrNull()
+                ?.let { chatMessagesFlowInternal.emit(it) }
+        }
+    }
+
+    // Registers a LiveKit Text Stream handler for the `lk.chat` topic — the API
+    // used by `@livekit/components-react` `useChat()` (Meet Web) and by the iOS
+    // SDK. Called from `InternalRoom` after the LiveKit Room is created, since
+    // the receiver lives at Room scope, not Participant scope.
+    fun registerChatTextStream(room: Room) {
+        room.registerTextStreamHandler(CHAT_TEXT_STREAM_TOPIC) { receiver, fromIdentity ->
+            scope.launch {
+                runCatching { receiver.readAll().joinToString("") }
+                    .onSuccess { text ->
+                        chatMessagesFlowInternal.emit(
+                            ChatMessage(
+                                id = receiver.info.id,
+                                timestamp = receiver.info.timestampMs,
+                                message = text,
+                                senderIdentity = fromIdentity.value,
+                            )
+                        )
+                    }
+            }
+        }
+    }
+
+    // Tier (a) noise suppression — surface livered, WebRTC built-in flag.
+    // Tier (b) RNNoise/Krisp processor attach is a follow-up.
+    override val noiseReductionSupported: Boolean = true
+
+    override suspend fun setNoiseReduction(enabled: Boolean) {
+        // INFO via android.util.Log (the SDK's expect-Log only has .d) — visible
+        // at default logcat level, pairs with the BbbaAudioProcessor
+        // "BBBA ON/OFF" line further down the stack. Together they prove the
+        // toggle propagated UI → SDK → native processor.
+        android.util.Log.i("LocalParticipant", "setNoiseReduction($enabled) → BbbaNoiseReduction")
+        noiseReductionEnabledState.value = enabled
+        // RNNoise (BigBlueBetterAudio) capture-post processor. It is registered
+        // once at Room creation (see InternalRoom) and toggled live here; it is
+        // a pure pass-through while disabled, so no track re-publish is needed.
+        io.vopenia.livekit.audio.BbbaNoiseReduction.setEnabled(enabled)
+    }
+
+    override suspend fun enableMicrophone(enabled: Boolean, device: AudioInputDevice?) {
+        PermissionsController.checkOrProvide(Permission.RECORD_AUDIO)
+        Log.d("LocalParticipant", "enableMicrophone($enabled, device=${device?.id})")
+        // LiveKit Android's setMicrophoneEnabled doesn't accept a device — the
+        // capture always uses the system's "communication" input. Route the
+        // choice through AudioManager.setCommunicationDevice (API 31+) before
+        // enabling so the new track captures from the desired input.
+        if (enabled && device != null) {
+            applyCommunicationDevice(device)
+        }
+        localParticipant.setMicrophoneEnabled(enabled)
+    }
+
+    // Drive LiveKit's AudioSwitchHandler (injected, see InternalRoom) rather than
+    // poking AudioManager directly, which the handler would override. selectDevice
+    // does both output and mic; it handles the API-29 legacy path (S9) internally.
+    // Proximity is our own wake lock, on only for the earpiece.
+    override suspend fun setAudioRoute(route: AudioRoute) {
+        // Select from the live device list — Twilio's AudioDevice constructors are
+        // internal, and the built-in Speakerphone/Earpiece are always present once
+        // the handler has started.
+        val devices = audioSwitchHandler.availableAudioDevices
+        val target: AudioDevice? = when (route) {
+            AudioRoute.Speaker -> devices.firstOrNull { it is AudioDevice.Speakerphone }
+            AudioRoute.Earpiece -> devices.firstOrNull { it is AudioDevice.Earpiece }
+            AudioRoute.Bluetooth -> devices.firstOrNull { it is AudioDevice.BluetoothHeadset }
+        }
+        if (target == null) {
+            Log.d("LocalParticipant", "setAudioRoute($route): no matching audio device")
+        } else {
+            // Audio routing touches AudioManager — do it on the main thread.
+            withContext(Dispatchers.Main) {
+                runCatching { audioSwitchHandler.selectDevice(target) }
+                    .onFailure { Log.d("LocalParticipant", "selectDevice failed: $it") }
+            }
+        }
+        updateProximityWakeLock(route == AudioRoute.Earpiece)
+        audioRouteState.value = route
+    }
+
+    // PROXIMITY_SCREEN_OFF_WAKE_LOCK: blanks the screen when the phone is held to
+    // the ear, but only while routed to the earpiece (never speaker/bluetooth).
+    private var proximityWakeLock: PowerManager.WakeLock? = null
+
+    @SuppressLint("WakelockTimeout") // released explicitly when leaving the earpiece / on disconnect
+    private fun updateProximityWakeLock(enable: Boolean) {
+        val context = runCatching { Sdk.applicationContext }.getOrNull() ?: return
+        val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager ?: return
+        if (enable) {
+            val lock = proximityWakeLock ?: runCatching {
+                powerManager.newWakeLock(PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK, "vopenia:proximity")
+            }.getOrNull()?.also { proximityWakeLock = it }
+            if (lock != null && !lock.isHeld) runCatching { lock.acquire() }
+        } else {
+            proximityWakeLock?.takeIf { it.isHeld }?.let { runCatching { it.release() } }
+        }
+    }
+
+    private fun applyCommunicationDevice(device: AudioInputDevice): Boolean {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S) {
+            // setCommunicationDevice was added in API 31. Older platforms only
+            // support `setSpeakerphoneOn` / `startBluetoothSco` — not useful for
+            // input routing. Log and bail.
+            Log.d("LocalParticipant", "applyCommunicationDevice: API ${android.os.Build.VERSION.SDK_INT} < 31, skipping")
+            return false
+        }
+        val context = runCatching { io.vopenia.livekit.Sdk.applicationContext }.getOrNull()
+            ?: return false
+        val audioManager = context.getSystemService(android.content.Context.AUDIO_SERVICE)
+            as? android.media.AudioManager ?: return false
+        val target = audioManager.availableCommunicationDevices.firstOrNull {
+            it.id.toString() == device.id
+        } ?: run {
+            Log.d("LocalParticipant", "applyCommunicationDevice: no input matching id=${device.id}")
+            return false
+        }
+        return audioManager.setCommunicationDevice(target)
+    }
+
+    override suspend fun enableCamera(enabled: Boolean, device: CameraDevice?) {
+        PermissionsController.checkOrProvide(Permission.CAMERA)
+        if (enabled) {
+            // Configure native-aspect capture BEFORE the track is created (via the
+            // capture defaults), so it is born at the sensor's native aspect instead
+            // of LiveKit's fixed 16:9 default — which crops 4:3 sensors and makes the
+            // camera look "zoomed in". Done via defaults rather than restartTrack():
+            // a live restartTrack disposes the MediaStreamTrack and races LiveKit's
+            // metrics collector ("MediaStreamTrack has been disposed"). See
+            // NativeAspectCaptureFormat.
+            applyNativeAspectDefaults()
+        }
+        localParticipant.setCameraEnabled(enabled)
+        if (enabled && device != null) {
+            findCameraTrack()?.switchCamera(device.id, null)
+        }
+    }
+
+    override suspend fun switchCamera() {
+        // switchCamera keeps the current captureParams (native aspect) and does not
+        // dispose the track, so no extra reconfiguration is needed.
+        findCameraTrack()?.switchCamera(null, null)
+    }
+
+    // Remembered so a camera track published later in the call adopts the
+    // user's choice without an explicit re-call.
+    @Volatile
+    private var sendingResolutionPreset: VideoResolutionPreset = VideoResolutionPreset.Standard
+
+    // Target capture HEIGHT in landscape coordinates; the width follows the
+    // sensor's native aspect (NativeAspectCaptureFormat). Defaults to ~720 so
+    // capture quality matches the prior 16:9 720p behaviour — only the aspect
+    // changes. setMaxSendingResolution lowers it per preset.
+    @Volatile
+    private var captureHeightTarget: Int = DEFAULT_CAPTURE_HEIGHT
+
+    override suspend fun setMaxSendingResolution(preset: VideoResolutionPreset) {
+        sendingResolutionPreset = preset
+        captureHeightTarget = preset.captureHeight()
+        // Apply to the capture defaults so the next camera track uses this
+        // resolution at the native aspect. We deliberately do not restartTrack() the
+        // live track (it races LiveKit's metrics collector and crashes the app); the
+        // change takes effect when the camera track is next (re)created.
+        applyNativeAspectDefaults()
+    }
+
+    /**
+     * Set the camera capture defaults to the selected camera's native aspect at
+     * [captureHeightTarget]. Applies to tracks created afterwards — no live
+     * restart, so it never disposes a published MediaStreamTrack.
+     */
+    private fun applyNativeAspectDefaults() {
+        val current = localParticipant.videoTrackCaptureDefaults
+        val params = NativeAspectCaptureFormat.compute(
+            Sdk.applicationContext, current.position, current.deviceId, captureHeightTarget
+        ) ?: return
+        if (current.captureParams.width == params.width &&
+            current.captureParams.height == params.height
+        ) return
+        localParticipant.videoTrackCaptureDefaults = LocalVideoTrackOptions(
+            isScreencast = current.isScreencast,
+            deviceId = current.deviceId,
+            position = current.position,
+            captureParams = params,
+        )
+    }
+
+    private fun VideoResolutionPreset.captureHeight(): Int = when (this) {
+        VideoResolutionPreset.Low -> 180
+        VideoResolutionPreset.Standard -> 360
+        VideoResolutionPreset.High -> 720
+    }
+
+    private fun findCameraTrack(): io.livekit.android.room.track.LocalVideoTrack? {
+        return localParticipant.trackPublications.values
+            .asSequence()
+            .filter { it.source == io.livekit.android.room.track.Track.Source.CAMERA }
+            .mapNotNull { it.track as? io.livekit.android.room.track.LocalVideoTrack }
+            .firstOrNull()
+    }
+
+    override suspend fun publishData(payload: ByteArray, reliable: Boolean, topic: String?) {
+        val reliability = if (reliable) DataPublishReliability.RELIABLE else DataPublishReliability.LOSSY
+        localParticipant.publishData(payload, reliability, topic, null)
+    }
+
+    override suspend fun updateAttributes(attributes: Map<String, String>) {
+        localParticipant.updateAttributes(attributes)
+        // LiveKit sends the attribute update to the server but does NOT reflect it
+        // back into `localParticipant.attributes` for the LOCAL participant (no self
+        // echo), so reading it here returns the stale map. Merge the written keys
+        // into our own state — otherwise local consumers (e.g. raise-hand) never see
+        // their own change and reconcile the optimistic state away. Remote peers get
+        // the change via the normal server broadcast.
+        stateFlow.emit(
+            stateFlow.value.copy(attributes = localParticipant.attributes + attributes)
+        )
+    }
+
+    override suspend fun startScreenShare() {
+        val (intent, notification, notificationId) = ScreenShareController.consume()
+            ?: throw IllegalStateException(
+                "ScreenShareController.setMediaProjectionResult(...) must be called " +
+                "with a MediaProjection result Intent before startScreenShare()."
+            )
+        localParticipant.setScreenShareEnabled(
+            true,
+            ScreenCaptureParams(intent, notificationId, notification, null)
+        )
+    }
+
+    override suspend fun stopScreenShare() {
+        localParticipant.setScreenShareEnabled(false, null)
+    }
+
+    // ------------------------------------------------------------------
+    // Additive Android-only API: publish a Camera2 logical camera id as a
+    // LiveKit video track with a caller-chosen source. Originally added
+    // for Neat hardware where camera id "1" is the HDMI capture input and
+    // we want to publish it with `Source.SCREEN_SHARE` so remote peers
+    // render it as content rather than a camera feed. Generic enough to
+    // be useful for any consumer that already has a logical camera id
+    // and wants explicit control over the published track Source.
+    //
+    // Not part of the common LocalParticipant abstract — Android-only by
+    // design. Public parameter is the vopenia `Source` enum so callers
+    // don't pull in the LiveKit-Android dependency directly. Callers
+    // cast `(room.localParticipant as? InternalLocalParticipant)` and
+    // check for non-null before calling.
+    // ------------------------------------------------------------------
+
+    private val cameraSourcedTracks = mutableMapOf<String, Pair<LkLocalVideoTrack, Camera2Capturer>>()
+
+    /**
+     * Publish a Camera2 logical camera as a LiveKit video track with the
+     * given [source]. Idempotent per [cameraId]: if a previous track was
+     * published for the same id, it's torn down first.
+     *
+     * @param cameraId Camera2 logical id (e.g. `"0"` for AI camera, `"1"`
+     *   for HDMI input on Neat hardware).
+     * @param source vopenia [Source] enum — typically `SCREEN_SHARE` for
+     *   content-share semantics; can be `CAMERA` to publish as an
+     *   additional camera feed.
+     * @param trackName Optional name for the track. Defaults to a stable
+     *   `"camera-<id>-<source>"` form.
+     */
+    suspend fun publishVideoTrackFromCamera(
+        cameraId: String,
+        source: Source,
+        trackName: String = "camera-$cameraId-${source.name.lowercase()}",
+    ) {
+        unpublishVideoTrackFromCamera(cameraId)
+        val capturer = Camera2Capturer(Sdk.applicationContext, cameraId, null)
+        val track = localParticipant.createVideoTrack(
+            name = trackName,
+            capturer = capturer,
+            options = LocalVideoTrackOptions(),
+            videoProcessor = null,
+        )
+        track.startCapture()
+        localParticipant.publishVideoTrack(
+            track = track,
+            options = VideoTrackPublishOptions(source = source.toLkSource()),
+        )
+        cameraSourcedTracks[cameraId] = track to capturer
+    }
+
+    /**
+     * Stop and unpublish a track previously published via
+     * [publishVideoTrackFromCamera]. No-op for an unknown [cameraId].
+     */
+    suspend fun unpublishVideoTrackFromCamera(cameraId: String) {
+        val (track, capturer) = cameraSourcedTracks.remove(cameraId) ?: return
+        runCatching { localParticipant.unpublishTrack(track, true) }
+        runCatching { capturer.stopCapture() }
+    }
+
+    private val videoEffectProcessor: VideoEffectProcessor by lazy { VideoEffectProcessor() }
+
+    override suspend fun setVideoEffect(effect: VideoEffect?) {
+        val cameraTrack = findCameraTrack()
+        if (cameraTrack == null) {
+            Log.d("LocalParticipant", "setVideoEffect: no camera track to attach to — start the camera first")
+            return
+        }
+        videoEffectProcessor.currentEffect = effect
+        val attached = VideoProcessorAttacher.attach(
+            cameraTrack,
+            if (effect == null) null else videoEffectProcessor
+        )
+        if (!attached) {
+            Log.d("LocalParticipant", "setVideoEffect: failed to attach processor (reflection)")
+        }
+    }
+
+    override suspend fun sendChatMessage(text: String): ChatMessage {
+        // Use LiveKit Text Streams (lk.chat topic) — the API consumed by
+        // `@livekit/components-react` `useChat()` on the Meet Web side and by
+        // the iOS SDK. LiveKit doesn't echo Text Stream sends back to the
+        // publisher, so we emit the local copy explicitly below.
+        val sender = localParticipant.streamText(
+            StreamTextOptions(
+                topic = CHAT_TEXT_STREAM_TOPIC,
+                operationType = TextStreamInfo.OperationType.CREATE,
+            )
+        )
+        sender.write(text)
+        sender.close()
+        val message = ChatMessage(
+            id = sender.info.id,
+            timestamp = sender.info.timestampMs,
+            message = text,
+            senderIdentity = identity,
+        )
+        chatMessagesFlowInternal.emit(message)
+        return message
+    }
+
+    override fun filterListAudio(tracks: List<LocalTrack>): List<LocalAudioTrack> {
+        return tracks.filterIsInstance<LocalAudioTrack>()
+    }
+
+    override fun filterListVideo(tracks: List<LocalTrack>): List<LocalVideoTrack> {
+        return tracks.filterIsInstance<LocalVideoTrack>()
+    }
+
+    private fun getOrCreate(
+        track: LocalTrackPublication
+    ): Pair<LocalTrack, Boolean> {
+        Log.d("LOCAL", "getOrCreate for ${track.sid}")
+
+        return internalTracks.value.find { it.sid == track.sid }.let {
+            if (null != it) {
+                it.updateInternalTrack(track)
+                it to false
+            } else {
+                when (kindFrom(track.kind)) {
+                    Kind.Audio -> LocalAudioTrack(scope, track)
+                    Kind.Video -> LocalVideoTrack(scope, track)
+                    Kind.None -> LocalNoneTrack(scope, track)
+                } to true
+            }
+        }
+    }
+}
+
+// LiveKit Text Streams topic for chat — used by `@livekit/components-react useChat()` (Meet Web)
+// and the iOS SDK. Distinct from the legacy data-channel topic [ChatTopics.CHAT] which is still
+// decoded inbound for backward compatibility with older Android builds.
+private const val CHAT_TEXT_STREAM_TOPIC = "lk.chat"
