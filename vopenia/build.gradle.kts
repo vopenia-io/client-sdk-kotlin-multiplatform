@@ -68,6 +68,10 @@ kotlin {
 
         pod("LiveKitClientKotlin") {
             version = "2.6.0"
+            // Sibling checkout, like vopenia-participants/vopenia-compose: the
+            // published 2.6.0 pod's BBBACore dependency does not resolve in the
+            // KGP synthetic project (module-not-found on BbbaNoiseFilter.swift).
+            source = path(rootProject.file("../LiveKitClientKotlin"))
             moduleName = "LiveKitClientKotlin"
             packageName = "LiveKitClientKotlin"
             extraOpts += listOf("-compiler-option", "-fmodules")

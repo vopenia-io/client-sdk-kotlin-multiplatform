@@ -63,6 +63,10 @@ kotlin {
         pod("LiveKitClientKotlin") {
             version = "2.6.0"
             linkOnly = true
+            // Sibling checkout, like the other modules: the published 2.6.0
+            // pod's BBBACore dependency does not resolve in the KGP synthetic
+            // project (module-not-found on BbbaNoiseFilter.swift).
+            source = path(rootProject.file("../LiveKitClientKotlin"))
             extraOpts += listOf("-compiler-option", "-fmodules")
         }
 
