@@ -41,13 +41,27 @@ abstract class Participant<
 
     abstract val identity: String?
 
-    override fun equals(other: Any?): Boolean {
-        if (other is Participant<*, *, *, *>) {
-            return other.identity == identity
-        }
+    /**
+     * Do [this] and [other] denote the same person in the room?
+     *
+     * [identity] is assigned by the LiveKit server, so it is `null` on a
+     * handle built before the server answered. While either side is
+     * unresolved, object identity is the only honest answer — treating two
+     * not-yet-identified participants as equal merges distinct people into
+     * one, silently dropping the second from any list deduplicated by
+     * equality.
+     */
+    protected fun hasSameIdentityAs(other: Participant<*, *, *, *>): Boolean {
+        if (this === other) return true
 
-        return false
+        val mine = identity ?: return false
+        val theirs = other.identity ?: return false
+
+        return mine == theirs
     }
+
+    override fun equals(other: Any?): Boolean =
+        other is Participant<*, *, *, *> && hasSameIdentityAs(other)
 
     val state: StateFlow<S>
         get() = stateFlow.asStateFlow()
@@ -70,7 +84,26 @@ abstract class Participant<
         }
     }
 
-    override fun hashCode(): Int {
-        return state.value.hashCode()
-    }
+    /**
+     * Constant by design — do not "improve" this into a hash of [identity].
+     *
+     * [equals] keys on [identity], which the server assigns during connect:
+     * `LocalParticipant.identity` reads `null` before it and non-null after.
+     * A hash derived from a value that changes while the object sits in a
+     * `HashMap` strands that entry in the wrong bucket and makes it
+     * unreachable, so a constant is the only value that stays consistent
+     * with [equals] across the whole lifetime of a handle. Participant sets
+     * are call-sized, so the resulting linear probe within the single bucket
+     * costs nothing measurable.
+     *
+     * This previously hashed `state.value`, which changes on every metadata,
+     * permission and attribute update and has nothing to do with what
+     * [equals] compares.
+     */
+    override fun hashCode(): Int = PARTICIPANT_HASH_CODE
 }
+
+/**
+ * Shared by every [Participant] — see [Participant.hashCode].
+ */
+private const val PARTICIPANT_HASH_CODE = 0x50415254

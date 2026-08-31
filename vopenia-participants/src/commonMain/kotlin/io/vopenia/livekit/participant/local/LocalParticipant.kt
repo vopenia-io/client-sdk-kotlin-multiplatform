@@ -145,15 +145,9 @@ abstract class LocalParticipant(scope: CoroutineScope) :
      */
     abstract suspend fun setMaxSendingResolution(preset: VideoResolutionPreset)
 
-    override fun equals(other: Any?): Boolean {
-        if (other is LocalParticipant) {
-            return other.identity == identity
-        }
-
-        return false
-    }
-
-    override fun hashCode(): Int {
-        return state.value.hashCode()
-    }
+    // A local handle never denotes the same participant as a handle from the
+    // other side of the call, so the type guard stays. The identity rule
+    // itself — and hashCode — come from Participant.
+    override fun equals(other: Any?): Boolean =
+        other is LocalParticipant && hasSameIdentityAs(other)
 }

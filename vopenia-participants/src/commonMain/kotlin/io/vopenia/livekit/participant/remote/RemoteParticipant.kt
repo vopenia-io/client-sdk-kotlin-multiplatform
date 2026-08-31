@@ -17,15 +17,9 @@ abstract class RemoteParticipant(
 
     override val transcriptsFlow =MutableSharedFlow<TranscriptionSegment>()
 
-    override fun equals(other: Any?): Boolean {
-        if (other is RemoteParticipant) {
-            return other.identity == identity
-        }
-
-        return false
-    }
-
-    override fun hashCode(): Int {
-        return state.value.hashCode()
-    }
+    // A remote handle never denotes the same participant as a handle from the
+    // other side of the call, so the type guard stays. The identity rule
+    // itself — and hashCode — come from Participant.
+    override fun equals(other: Any?): Boolean =
+        other is RemoteParticipant && hasSameIdentityAs(other)
 }
