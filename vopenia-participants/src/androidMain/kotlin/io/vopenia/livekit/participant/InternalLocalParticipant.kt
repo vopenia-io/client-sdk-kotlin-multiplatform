@@ -34,6 +34,8 @@ import io.livekit.android.room.datastream.StreamTextOptions
 import io.livekit.android.room.datastream.TextStreamInfo
 import io.livekit.android.room.participant.VideoTrackPublishOptions
 import io.livekit.android.room.track.DataPublishReliability
+import io.livekit.android.room.track.VideoEncoding
+import livekit.org.webrtc.RtpParameters
 import io.livekit.android.room.track.LocalVideoTrackOptions
 import io.vopenia.livekit.Sdk
 import io.vopenia.livekit.participant.devices.AudioRoute
@@ -498,19 +500,47 @@ class InternalLocalParticipant(
         cameraId: String,
         source: Source,
         trackName: String = "camera-$cameraId-${source.name.lowercase()}",
+        // Null = LiveKit defaults (720p capture, default bitrate). Content
+        // inputs (HDMI/USB-C published as SCREEN_SHARE) want the source's
+        // native resolution and a bitrate sized for text-heavy frames —
+        // the 720p re-scale of a 1080p signal reads as "blurry slides".
+        targetHeight: Int? = null,
+        maxBitrateBps: Int? = null,
     ) {
         unpublishVideoTrackFromCamera(cameraId)
         val capturer = Camera2Capturer(Sdk.applicationContext, cameraId, null)
+        val captureParams = targetHeight?.let {
+            NativeAspectCaptureFormat.compute(
+                context = Sdk.applicationContext,
+                position = null,
+                deviceId = cameraId,
+                targetHeight = it,
+            )
+        }
         val track = localParticipant.createVideoTrack(
             name = trackName,
             capturer = capturer,
-            options = LocalVideoTrackOptions(),
+            options = captureParams
+                ?.let { LocalVideoTrackOptions(captureParams = it) }
+                ?: LocalVideoTrackOptions(),
             videoProcessor = null,
         )
         track.startCapture()
         localParticipant.publishVideoTrack(
             track = track,
-            options = VideoTrackPublishOptions(source = source.toLkSource()),
+            options = VideoTrackPublishOptions(
+                source = source.toLkSource(),
+                videoEncoding = maxBitrateBps?.let {
+                    VideoEncoding(it, captureParams?.maxFps ?: DEFAULT_CAMERA_FPS)
+                },
+                // Screen content degrades by dropping FRAMES, never
+                // resolution: soft text is worse than a lower framerate.
+                degradationPreference = if (source == Source.SCREEN_SHARE) {
+                    RtpParameters.DegradationPreference.MAINTAIN_RESOLUTION
+                } else {
+                    null
+                },
+            ),
         )
         cameraSourcedTracks[cameraId] = track to capturer
     }
@@ -598,3 +628,5 @@ class InternalLocalParticipant(
 // and the iOS SDK. Distinct from the legacy data-channel topic [ChatTopics.CHAT] which is still
 // decoded inbound for backward compatibility with older Android builds.
 private const val CHAT_TEXT_STREAM_TOPIC = "lk.chat"
+
+private const val DEFAULT_CAMERA_FPS = 30
