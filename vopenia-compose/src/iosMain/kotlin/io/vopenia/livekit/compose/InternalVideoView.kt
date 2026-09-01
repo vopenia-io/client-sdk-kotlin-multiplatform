@@ -42,6 +42,11 @@ internal fun InternalVideoView(
     }
 
     LaunchedEffect(track) {
+        // First composition: the factory below has (or will have) attached
+        // this same track and recorded it in previousTrack — re-attaching
+        // here would register the renderer twice on the LiveKit track.
+        if (previousTrack === track) return@LaunchedEffect
+
         previousTrack?.let {
             rememberedWrapper?.detach(it)
         }
@@ -65,6 +70,7 @@ internal fun InternalVideoView(
             rememberedWrapper = wrapper
 
             wrapper.attach(track)
+            previousTrack = track
             wrapper.videoView
         },
         modifier = modifier,
@@ -73,7 +79,11 @@ internal fun InternalVideoView(
             it.setLayoutMode(layoutMode)
         },
         onRelease = {
-            rememberedWrapper?.detach(track)
+            // Detach the CURRENTLY attached track, not the one captured when
+            // this lambda was created: after a rebind, detaching the stale
+            // track would leave the live one holding a renderer to a disposed
+            // view — a leak that keeps the track pushing frames into it.
+            (previousTrack ?: track).let { rememberedWrapper?.detach(it) }
         },
         // The video renderer itself is not interactive. If UIKit receives touches
         // here, taps on a participant tile don't reach the Compose clickable that
