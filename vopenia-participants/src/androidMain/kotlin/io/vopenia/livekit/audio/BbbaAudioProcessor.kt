@@ -23,6 +23,7 @@ import java.nio.ByteBuffer
 internal class BbbaAudioProcessor : AudioProcessorInterface {
 
     @Volatile private var handle: Long = 0L
+    @Volatile private var lastSampleRate: Int = 0
     // Default true to match `LocalParticipant.noiseReductionEnabledState`
     // (Kotlin commonMain) which is initialized to `true`. If the native side
     // stays false here, the toggle shows ON in the UI but BBBA stays OFF
@@ -43,6 +44,23 @@ internal class BbbaAudioProcessor : AudioProcessorInterface {
     /** Enable/disable live (pass-through when disabled). */
     fun setEnabled(value: Boolean) {
         val previous = enabled
+        // OFF -> ON: rebuild the native core BEFORE resuming processing. The
+        // disabled window freezes the DSP's adaptive state (VAD gate envelope,
+        // RNNoise noise model, and above all the Faust leveler/multiband
+        // integrators); resuming on that stale state squashes the outgoing
+        // level until the engine is recreated — users had to kill the app.
+        // Rebuilding while still bypassed also means no audio thread is
+        // inside nativeProcess with the old handle.
+        if (value && !previous) {
+            synchronized(lock) {
+                if (handle != 0L && lastSampleRate == REQUIRED_SAMPLE_RATE) {
+                    releaseLocked()
+                    handle = nativeCreate(lastSampleRate)
+                    if (handle != 0L) pushParamsLocked()
+                    Log.i(TAG, "BBBA re-enable: engine rebuilt (handle=$handle)")
+                }
+            }
+        }
         enabled = value
         // INFO so it's visible at default logcat level — used to confirm at
         // a glance that the UI toggle actually reaches the native processor.
@@ -71,6 +89,7 @@ internal class BbbaAudioProcessor : AudioProcessorInterface {
     override fun initializeAudioProcessing(sampleRateHz: Int, numChannels: Int) {
         synchronized(lock) {
             ensureLibraryLoaded()
+            lastSampleRate = sampleRateHz
             if (sampleRateHz != REQUIRED_SAMPLE_RATE) {
                 Log.w(
                     TAG,
@@ -82,17 +101,7 @@ internal class BbbaAudioProcessor : AudioProcessorInterface {
             }
             if (handle == 0L) {
                 handle = nativeCreate(sampleRateHz)
-                if (handle != 0L) {
-                    // Push the BBBA web reference parameters explicitly. The
-                    // Faust DSP's bare defaults are weaker (mb=60, sb=60,
-                    // leveler=-18) — without these overrides the aesthetic
-                    // chain barely lifts the post-RNNoise signal and users
-                    // perceive almost no difference vs the raw mic.
-                    nativeSetParam(handle, "intensity", intensity)
-                    nativeSetParam(handle, "mb_strength", mbStrength)
-                    nativeSetParam(handle, "sb_strength", sbStrength)
-                    nativeSetParam(handle, "leveler_target", levelerTarget)
-                }
+                if (handle != 0L) pushParamsLocked()
                 Log.i(
                     TAG,
                     "BBBA initialized @ ${sampleRateHz}Hz × $numChannels ch " +
@@ -142,6 +151,20 @@ internal class BbbaAudioProcessor : AudioProcessorInterface {
             nativeDestroy(handle)
             handle = 0L
         }
+    }
+
+    /**
+     * Push the BBBA web reference parameters explicitly (call with [lock]
+     * held, right after [nativeCreate]). The Faust DSP's bare defaults are
+     * weaker (mb=60, sb=60, leveler=-18) — without these overrides the
+     * aesthetic chain barely lifts the post-RNNoise signal and users
+     * perceive almost no difference vs the raw mic.
+     */
+    private fun pushParamsLocked() {
+        nativeSetParam(handle, "intensity", intensity)
+        nativeSetParam(handle, "mb_strength", mbStrength)
+        nativeSetParam(handle, "sb_strength", sbStrength)
+        nativeSetParam(handle, "leveler_target", levelerTarget)
     }
 
     private external fun nativeCreate(sampleRate: Int): Long
