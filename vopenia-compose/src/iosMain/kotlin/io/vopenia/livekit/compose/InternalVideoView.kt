@@ -17,6 +17,7 @@ import io.vopenia.livekit.VideoViewWrapper
 import io.vopenia.livekit.participant.track.IVideoTrack
 import io.vopenia.livekit.participant.track.local.LocalVideoTrackPreview
 import kotlinx.cinterop.ExperimentalForeignApi
+import platform.UIKit.UIColor
 
 @OptIn(ExperimentalForeignApi::class)
 @Composable
@@ -63,6 +64,12 @@ internal fun InternalVideoView(
         }
     }
 
+    // The interop view is a hole punched through the Compose canvas: nothing
+    // Compose paints behind it shows through, so a Fit (letterboxed) track
+    // must carry its own dark band color or the bands show the window
+    // background (white). Fill covers the whole view and keeps it transparent.
+    val letterboxColor = if (scaleType == ScaleType.Fit) UIColor.blackColor else UIColor.clearColor
+
     UIKitView(
         factory = {
             val wrapper = VideoViewFactory.createVideoView()
@@ -71,12 +78,14 @@ internal fun InternalVideoView(
 
             wrapper.attach(track)
             previousTrack = track
+            wrapper.videoView.backgroundColor = letterboxColor
             wrapper.videoView
         },
         modifier = modifier,
         update = {
             it.setMirrorMode(mirrorMode)
             it.setLayoutMode(layoutMode)
+            it.backgroundColor = letterboxColor
         },
         onRelease = {
             // Detach the CURRENTLY attached track, not the one captured when
