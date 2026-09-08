@@ -42,4 +42,9 @@ open class SubTrack(
     internal fun setPublished(published: Boolean) {
         updateState { copy(published = published) }
     }
+
+    internal fun setDimensions(width: Int, height: Int) {
+        if (width <= 0 || height <= 0) return
+        updateState { copy(width = width, height = height) }
+    }
 }

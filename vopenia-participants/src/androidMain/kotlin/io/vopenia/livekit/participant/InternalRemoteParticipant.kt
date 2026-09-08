@@ -150,6 +150,7 @@ class InternalRemoteParticipant(
                                 val (wrapper, new) = getOrCreate(trackPublication)
 
                                 wrapper.setActive(it.streamState == Track.StreamState.ACTIVE)
+                                wrapper.refreshDimensions()
                                 if (new) append(wrapper)
                             }
                         }
@@ -160,6 +161,7 @@ class InternalRemoteParticipant(
                         val (wrapper, new) = getOrCreate(it.publication)
 
                         wrapper.setSubscribed(true)
+                        wrapper.refreshDimensions()
                         if (new) append(wrapper)
                     }
 

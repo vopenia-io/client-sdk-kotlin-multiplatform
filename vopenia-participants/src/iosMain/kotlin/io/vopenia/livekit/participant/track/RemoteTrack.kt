@@ -2,6 +2,7 @@ package io.vopenia.livekit.participant.track
 
 import LiveKitClient.TrackKind
 import LiveKitClient.TrackSource
+import LiveKitClientKotlin.TrackPublicationKotlin
 import io.vopenia.livekit.NSErrorException
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.CoroutineScope
@@ -55,6 +56,19 @@ actual sealed class RemoteTrack(
 
     internal actual fun updateInternalTrack(track: RemoteTrackPublication) {
         internalTrack = track
+        refreshDimensions()
+    }
+
+    /**
+     * Re-read the published dimensions (TrackInfo). Called when the
+     * publication is replaced and when the track gets subscribed / active,
+     * the moments the server has (re)sent the publisher's declaration.
+     */
+    internal fun refreshDimensions() {
+        setDimensions(
+            TrackPublicationKotlin.widthOf(internalTrack).toInt(),
+            TrackPublicationKotlin.heightOf(internalTrack).toInt(),
+        )
     }
 }
 

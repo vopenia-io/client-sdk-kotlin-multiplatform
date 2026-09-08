@@ -27,6 +27,17 @@ actual sealed class RemoteTrack(
 
     internal actual fun updateInternalTrack(track: RemoteTrackPublication) {
         internalTrack = track
+        refreshDimensions()
+    }
+
+    /**
+     * Re-read the published dimensions (TrackInfo). Called when the
+     * publication is replaced and when the track gets subscribed / active,
+     * the moments the server has (re)sent the publisher's declaration.
+     */
+    internal fun refreshDimensions() {
+        val dimensions = internalTrack.dimensions ?: return
+        setDimensions(dimensions.width, dimensions.height)
     }
 
     actual suspend fun enable(enable: Boolean) {

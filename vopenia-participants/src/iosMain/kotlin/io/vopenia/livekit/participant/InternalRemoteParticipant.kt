@@ -111,6 +111,7 @@ class InternalRemoteParticipant(
                 val (wrapper, new) = getOrCreate(track)
 
                 wrapper.setSubscribed(true)
+                wrapper.refreshDimensions()
                 if (new) append(wrapper)
             },
             onTrackUnsubscribed = { track ->
@@ -123,6 +124,7 @@ class InternalRemoteParticipant(
                 val (wrapper, new) = getOrCreate(trackPublication)
 
                 wrapper.setActive(streamState == StreamState.Active)
+                wrapper.refreshDimensions()
                 if (new) append(wrapper)
             },
             onAttributesUpdated = { attributes ->
