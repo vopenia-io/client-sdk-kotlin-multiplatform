@@ -197,6 +197,7 @@ class InternalLocalParticipant(
                         stateFlow.emit(stateFlow.value.copy(attributes = localParticipant.attributes))
                     }
 
+
                     is ParticipantEvent.LocalTrackPublicationFailed -> {
                         // TODO
                     }
@@ -434,6 +435,17 @@ class InternalLocalParticipant(
     override suspend fun publishData(payload: ByteArray, reliable: Boolean, topic: String?) {
         val reliability = if (reliable) DataPublishReliability.RELIABLE else DataPublishReliability.LOSSY
         localParticipant.publishData(payload, reliability, topic, null)
+    }
+
+    /**
+     * Re-read the native attributes: the state is seeded before connect (empty)
+     * and the token's server-assigned values (avatar `color`, ...) arriving with
+     * the join-time ParticipantInfo do not reliably surface as AttributesChanged.
+     * Called by InternalRoom on Connected / Reconnected.
+     */
+    fun refreshAttributesFromNative() {
+        val native = localParticipant.attributes
+        if (native.isNotEmpty()) stateFlow.value = stateFlow.value.copy(attributes = native)
     }
 
     override suspend fun updateAttributes(attributes: Map<String, String>) {

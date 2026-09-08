@@ -174,7 +174,16 @@ class InternalLocalParticipant(
      * avoiding an "Anonymous" flash on first render.
      */
     fun refreshNameFromNative() {
-        stateFlow.update { it.copy(name = localParticipant.name()) }
+        // Same story for the token's initial attributes (server-assigned avatar
+        // `color`, ...): the iOS SDK only reports CHANGES, so re-read them here
+        // too, keeping our cached map when the native one is not exposed yet.
+        val nativeAttributes = localParticipant.attributes() as? Map<String, String>
+        stateFlow.update {
+            it.copy(
+                name = localParticipant.name(),
+                attributes = nativeAttributes?.takeIf { attrs -> attrs.isNotEmpty() } ?: it.attributes,
+            )
+        }
     }
 
     /// Register the LiveKit Text Stream handler for chat ("lk.chat" topic).

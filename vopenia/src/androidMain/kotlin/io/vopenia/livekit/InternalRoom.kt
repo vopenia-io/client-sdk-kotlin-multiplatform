@@ -114,7 +114,10 @@ internal actual class InternalRoom actual constructor(
         room.events.events.collect {
             when (it) {
                 // is RoomEvent.ActiveSpeakersChanged -> TODO()
-                is RoomEvent.Connected -> connectionStateEmitter.emit(ConnectionState.Connected)
+                is RoomEvent.Connected -> {
+                    (localParticipant as? InternalLocalParticipant)?.refreshAttributesFromNative()
+                    connectionStateEmitter.emit(ConnectionState.Connected)
+                }
                 // is RoomEvent.ConnectionQualityChanged -> TODO()
                 // is RoomEvent.DataReceived -> TODO()
                 // Purge the remote list on terminal states so a rejoin (which reuses this
@@ -143,7 +146,10 @@ internal actual class InternalRoom actual constructor(
                 // is RoomEvent.ParticipantMetadataChanged -> TODO()
                 // is RoomEvent.ParticipantNameChanged -> TODO()
                 // is RoomEvent.ParticipantPermissionsChanged -> TODO()
-                is RoomEvent.Reconnected -> connectionStateEmitter.emit(ConnectionState.Connected)
+                is RoomEvent.Reconnected -> {
+                    (localParticipant as? InternalLocalParticipant)?.refreshAttributesFromNative()
+                    connectionStateEmitter.emit(ConnectionState.Connected)
+                }
                 is RoomEvent.Reconnecting -> connectionStateEmitter.emit(ConnectionState.Connecting)
                 // is RoomEvent.RecordingStatusChanged -> TODO()
                 // is RoomEvent.RoomMetadataChanged -> TODO()
