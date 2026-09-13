@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.update
 
 abstract class Participant<
         T : SubTrack,
@@ -79,8 +79,30 @@ abstract class Participant<
         get() = isSpeakingFlow.asStateFlow()
 
     protected fun append(track: T) {
-        scope.launch {
-            internalTracks.emit(internalTracks.value + track)
+        internalTracks.update { it + track }
+    }
+
+    /**
+     * Return the wrapper [matches] selects, creating AND registering one when there is
+     * none - as a single atomic step.
+     *
+     * Every platform callback that carries a track publication goes through here, and
+     * they are not serialised with one another (iOS gets them straight from LiveKit's
+     * queues; only Android funnels them through one collector). Read-then-append left
+     * two windows: two callbacks for the SAME track each built a wrapper, so the publish
+     * flag and the subscribe flag ended up on different objects and the consumer only
+     * ever saw one of them; and two appends computed from the same snapshot dropped one
+     * of the two tracks. Both shapes end as "that track never becomes a tile".
+     *
+     * [create] may run more than once under contention (only the winning wrapper is kept),
+     * so it must stay a plain constructor call with no side effect.
+     */
+    protected fun getOrAppend(matches: (T) -> Boolean, create: () -> T): Pair<T, Boolean> {
+        while (true) {
+            val current = internalTracks.value
+            current.firstOrNull(matches)?.let { return it to false }
+            val created = create()
+            if (internalTracks.compareAndSet(current, current + created)) return created to true
         }
     }
 

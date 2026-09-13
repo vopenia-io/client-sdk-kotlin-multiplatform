@@ -114,19 +114,13 @@ class InternalLocalParticipant(
                 }
             },
             onTrackPublished = { track ->
-                val (wrapper, new) = getOrCreate(track as LocalTrackPublication)
-                wrapper.setPublished(true)
-                if (new) append(wrapper)
+                getOrCreate(track as LocalTrackPublication).setPublished(true)
             },
             onTrackUnpublished = { track ->
-                val (wrapper, new) = getOrCreate(track as LocalTrackPublication)
-                wrapper.setPublished(false)
-                if (new) append(wrapper)
+                getOrCreate(track as LocalTrackPublication).setPublished(false)
             },
             onTrackPublicationIsMuted = { track, isMuted ->
-                val (wrapper, new) = getOrCreate(track as LocalTrackPublication)
-                wrapper.setMuted(isMuted)
-                if (new) append(wrapper)
+                getOrCreate(track as LocalTrackPublication).setMuted(isMuted)
             },
             onTranscriptionSegmentsReceived = { segments ->
                 segments.forEach { transcriptsFlow.tryEmit(it) }
@@ -446,19 +440,22 @@ class InternalLocalParticipant(
         return message
     }
 
-    private fun getOrCreate(track: LocalTrackPublication): Pair<LocalTrack, Boolean> =
-        internalTracks.value.find { it.sid == track.sid().stringValue() }.let {
-            if (null != it) {
-                it.updateInternalTrack(track)
-                it to false
-            } else {
+    /** Find-or-create, atomic - see the remote twin and Participant.getOrAppend. */
+    private fun getOrCreate(track: LocalTrackPublication): LocalTrack {
+        val sid = track.sid().stringValue()
+        val (wrapper, isNew) = getOrAppend(
+            matches = { it.sid == sid },
+            create = {
                 when (kindFrom(track.kind())) {
                     Kind.Audio -> LocalAudioTrack(scope, track)
                     Kind.Video -> LocalVideoTrack(scope, track)
                     Kind.None -> LocalNoneTrack(scope, track)
-                } to true
-            }
-        }
+                }
+            },
+        )
+        if (!isNew) wrapper.updateInternalTrack(track)
+        return wrapper
+    }
 }
 
 @OptIn(ExperimentalForeignApi::class)

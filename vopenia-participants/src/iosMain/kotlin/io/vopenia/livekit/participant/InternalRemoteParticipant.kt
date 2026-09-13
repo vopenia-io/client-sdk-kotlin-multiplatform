@@ -89,43 +89,28 @@ class InternalRemoteParticipant(
                 }
             },
             onTrackPublished = { track ->
-                val (wrapper, new) = getOrCreate(track)
-
-                wrapper.setPublished(true)
-                if (new) append(wrapper)
+                getOrCreate(track).setPublished(true)
             },
             onTrackUnpublished = { track ->
-                val (wrapper, new) = getOrCreate(track)
-
-                wrapper.setPublished(false)
-                if (new) append(wrapper)
+                getOrCreate(track).setPublished(false)
             },
             onTrackPublicationIsMuted = { track, isMuted ->
-                println("onTrackPublicationIsMuted $track")
-                val (wrapper, new) = getOrCreate(track as RemoteTrackPublication)
-
-                wrapper.setMuted(isMuted)
-                if (new) append(wrapper)
+                getOrCreate(track as RemoteTrackPublication).setMuted(isMuted)
             },
             onTrackSubscribed = { track ->
-                val (wrapper, new) = getOrCreate(track)
-
-                wrapper.setSubscribed(true)
-                wrapper.refreshDimensions()
-                if (new) append(wrapper)
+                getOrCreate(track).let { wrapper ->
+                    wrapper.setSubscribed(true)
+                    wrapper.refreshDimensions()
+                }
             },
             onTrackUnsubscribed = { track ->
-                val (wrapper, new) = getOrCreate(track)
-
-                wrapper.setSubscribed(false)
-                if (new) append(wrapper)
+                getOrCreate(track).setSubscribed(false)
             },
             onTrackStreamStateChanged = { trackPublication, streamState ->
-                val (wrapper, new) = getOrCreate(trackPublication)
-
-                wrapper.setActive(streamState == StreamState.Active)
-                wrapper.refreshDimensions()
-                if (new) append(wrapper)
+                getOrCreate(trackPublication).let { wrapper ->
+                    wrapper.setActive(streamState == StreamState.Active)
+                    wrapper.refreshDimensions()
+                }
             },
             onAttributesUpdated = { attributes ->
                 scope.async {
@@ -151,10 +136,7 @@ class InternalRemoteParticipant(
 
         remoteParticipant.trackPublications().values.forEach {
             if (it is RemoteTrackPublication) {
-                val (wrapper, new) = getOrCreate(it)
-
-                wrapper.setPublished(true)
-                if (new) append(wrapper)
+                getOrCreate(it).setPublished(true)
             }
         }
 
@@ -190,16 +172,28 @@ class InternalRemoteParticipant(
         }
     }
 
-    private fun getOrCreate(track: RemoteTrackPublication): Pair<RemoteTrack, Boolean> =
-        internalTracks.value.find { it.sid == track.sid().stringValue() }.let {
-            if (null != it) {
-                it to false
-            } else {
+    /**
+     * The wrapper for [track], registered on this participant. LiveKit delivers the
+     * publish and subscribe callbacks for the same track back to back from its own
+     * queues, so this find-or-create MUST be atomic: two wrappers for one sid meant the
+     * published flag landed on one object and the subscribed flag on the other, and the
+     * consumer - which keys tracks by sid - kept whichever came first and never saw the
+     * other flag. Also re-reads the publication like the Android side does, so a
+     * republished info (dimensions) is picked up.
+     */
+    private fun getOrCreate(track: RemoteTrackPublication): RemoteTrack {
+        val sid = track.sid().stringValue()
+        val (wrapper, isNew) = getOrAppend(
+            matches = { it.sid == sid },
+            create = {
                 when (kindFrom(track.kind())) {
                     Kind.Audio -> RemoteAudioTrack(scope, track)
                     Kind.Video -> RemoteVideoTrack(scope, track)
                     Kind.None -> RemoteNoneTrack(scope, track)
-                } to true
-            }
-        }
+                }
+            },
+        )
+        if (!isNew) wrapper.updateInternalTrack(track)
+        return wrapper
+    }
 }

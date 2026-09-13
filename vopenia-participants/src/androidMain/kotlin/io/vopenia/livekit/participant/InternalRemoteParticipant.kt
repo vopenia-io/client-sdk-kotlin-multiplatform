@@ -83,10 +83,7 @@ class InternalRemoteParticipant(
 
         remoteParticipant.trackPublications.values.forEach {
             if (it is RemoteTrackPublication) {
-                val (wrapper, new) = getOrCreate(it)
-
-                wrapper.setPublished(true)
-                if (new) append(wrapper)
+                getOrCreate(it).setPublished(true)
             }
         }
 
@@ -130,39 +127,31 @@ class InternalRemoteParticipant(
                     }
 
                     is ParticipantEvent.TrackMuted -> {
-                        val (wrapper, new) = getOrCreate(it.publication as RemoteTrackPublication)
-
-                        wrapper.setMuted(true)
-                        if (new) append(wrapper)
+                        getOrCreate(it.publication as RemoteTrackPublication).setMuted(true)
                     }
 
                     is ParticipantEvent.TrackPublished -> {
                         Log.d("REMOTE", "published $it")
-                        val (wrapper, new) = getOrCreate(it.publication)
-
-                        wrapper.setPublished(true)
-                        if (new) append(wrapper)
+                        getOrCreate(it.publication).setPublished(true)
                     }
 
                     is ParticipantEvent.TrackStreamStateChanged -> {
                         it.trackPublication.let { trackPublication ->
                             if (trackPublication is RemoteTrackPublication) {
-                                val (wrapper, new) = getOrCreate(trackPublication)
-
-                                wrapper.setActive(it.streamState == Track.StreamState.ACTIVE)
-                                wrapper.refreshDimensions()
-                                if (new) append(wrapper)
+                                getOrCreate(trackPublication).let { wrapper ->
+                                    wrapper.setActive(it.streamState == Track.StreamState.ACTIVE)
+                                    wrapper.refreshDimensions()
+                                }
                             }
                         }
                     }
 
                     is ParticipantEvent.TrackSubscribed -> {
                         Log.d("REMOTE", "track subscribed $it")
-                        val (wrapper, new) = getOrCreate(it.publication)
-
-                        wrapper.setSubscribed(true)
-                        wrapper.refreshDimensions()
-                        if (new) append(wrapper)
+                        getOrCreate(it.publication).let { wrapper ->
+                            wrapper.setSubscribed(true)
+                            wrapper.refreshDimensions()
+                        }
                     }
 
                     is ParticipantEvent.TrackSubscriptionFailed -> {
@@ -174,26 +163,17 @@ class InternalRemoteParticipant(
                     }
 
                     is ParticipantEvent.TrackUnmuted -> {
-                        val (wrapper, new) = getOrCreate(it.publication as RemoteTrackPublication)
-
-                        wrapper.setMuted(false)
-                        if (new) append(wrapper)
+                        getOrCreate(it.publication as RemoteTrackPublication).setMuted(false)
                     }
 
                     is ParticipantEvent.TrackUnpublished -> {
                         Log.d("REMOTE", "unpublished $it")
-                        val (wrapper, new) = getOrCreate(it.publication)
-
-                        wrapper.setPublished(false)
-                        if (new) append(wrapper)
+                        getOrCreate(it.publication).setPublished(false)
                     }
 
                     is ParticipantEvent.TrackUnsubscribed -> {
                         Log.d("REMOTE", "unsubscribed $it")
-                        val (wrapper, new) = getOrCreate(it.publication)
-
-                        wrapper.setSubscribed(false)
-                        if (new) append(wrapper)
+                        getOrCreate(it.publication).setSubscribed(false)
                     }
 
                     is ParticipantEvent.AttributesChanged -> {
@@ -235,22 +215,24 @@ class InternalRemoteParticipant(
         }
     }
 
-    private fun getOrCreate(
-        track: RemoteTrackPublication
-    ): Pair<RemoteTrack, Boolean> {
-        Log.d("REMOTE", "getOrCreate for ${track.sid}")
-
-        return internalTracks.value.find { it.sid == track.sid }.let {
-            if (null != it) {
-                it.updateInternalTrack(track)
-                it to false
-            } else {
+    /**
+     * The wrapper for [track], registered on this participant. Atomic find-or-create:
+     * see Participant.getOrAppend. Events reach us serialised here (one collector), but
+     * the registration itself is shared with iOS, where they are not.
+     */
+    private fun getOrCreate(track: RemoteTrackPublication): RemoteTrack {
+        val sid = track.sid
+        val (wrapper, isNew) = getOrAppend(
+            matches = { it.sid == sid },
+            create = {
                 when (kindFrom(track.kind)) {
                     Kind.Audio -> RemoteAudioTrack(scope, track)
                     Kind.Video -> RemoteVideoTrack(scope, track)
                     Kind.None -> RemoteNoneTrack(scope, track)
-                } to true
-            }
-        }
+                }
+            },
+        )
+        if (!isNew) wrapper.updateInternalTrack(track)
+        return wrapper
     }
 }

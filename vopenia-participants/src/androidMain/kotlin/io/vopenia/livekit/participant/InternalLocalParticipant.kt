@@ -113,17 +113,11 @@ class InternalLocalParticipant(
                     }
 
                     is ParticipantEvent.LocalTrackPublished -> {
-                        val (wrapper, new) = getOrCreate(it.publication)
-
-                        wrapper.setPublished(true)
-                        if (new) append(wrapper)
+                        getOrCreate(it.publication).setPublished(true)
                     }
 
                     is ParticipantEvent.LocalTrackUnpublished -> {
-                        val (wrapper, new) = getOrCreate(it.publication)
-
-                        wrapper.setPublished(false)
-                        if (new) append(wrapper)
+                        getOrCreate(it.publication).setPublished(false)
                     }
 
                     is ParticipantEvent.MetadataChanged -> {
@@ -152,10 +146,7 @@ class InternalLocalParticipant(
 
                     is ParticipantEvent.TrackMuted -> {
                         Log.d("LocalParticipant", "track is muted")
-                        val (wrapper, new) = getOrCreate(it.publication as LocalTrackPublication)
-
-                        wrapper.setMuted(true)
-                        if (new) append(wrapper)
+                        getOrCreate(it.publication as LocalTrackPublication).setMuted(true)
                     }
 
                     is ParticipantEvent.TrackPublished -> {
@@ -179,10 +170,7 @@ class InternalLocalParticipant(
                     }
 
                     is ParticipantEvent.TrackUnmuted -> {
-                        val (wrapper, new) = getOrCreate(it.publication as LocalTrackPublication)
-
-                        wrapper.setMuted(false)
-                        if (new) append(wrapper)
+                        getOrCreate(it.publication as LocalTrackPublication).setMuted(false)
                     }
 
                     is ParticipantEvent.TrackUnpublished -> {
@@ -616,23 +604,21 @@ class InternalLocalParticipant(
         return tracks.filterIsInstance<LocalVideoTrack>()
     }
 
-    private fun getOrCreate(
-        track: LocalTrackPublication
-    ): Pair<LocalTrack, Boolean> {
-        Log.d("LOCAL", "getOrCreate for ${track.sid}")
-
-        return internalTracks.value.find { it.sid == track.sid }.let {
-            if (null != it) {
-                it.updateInternalTrack(track)
-                it to false
-            } else {
+    /** Find-or-create, atomic - see Participant.getOrAppend. */
+    private fun getOrCreate(track: LocalTrackPublication): LocalTrack {
+        val sid = track.sid
+        val (wrapper, isNew) = getOrAppend(
+            matches = { it.sid == sid },
+            create = {
                 when (kindFrom(track.kind)) {
                     Kind.Audio -> LocalAudioTrack(scope, track)
                     Kind.Video -> LocalVideoTrack(scope, track)
                     Kind.None -> LocalNoneTrack(scope, track)
-                } to true
-            }
-        }
+                }
+            },
+        )
+        if (!isNew) wrapper.updateInternalTrack(track)
+        return wrapper
     }
 }
 
