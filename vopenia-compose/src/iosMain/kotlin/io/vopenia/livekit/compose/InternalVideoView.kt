@@ -4,6 +4,7 @@ import LiveKitClient.LocalVideoTrack
 import LiveKitClient.createCameraTrack
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,6 +32,16 @@ internal fun InternalVideoView(
     var previousTrack: IVideoTrack? by remember { mutableStateOf(null) }
     var rememberedWrapper: VideoViewWrapper? by remember { mutableStateOf(null) }
 
+    // The tile mounts this view as soon as the track is PUBLISHED - mounting a
+    // renderer is precisely what tells LiveKit the track is on screen and
+    // unpauses an adaptive subscription - so the publication usually carries no
+    // media track yet at that point, and there is nothing to bind the view to.
+    // A media track exists once the publication is SUBSCRIBED, hence the re-run
+    // below on that flag (the Android renderer keys its attach on the same one).
+    // Without it a track published mid-call - a screen share, a late joiner's
+    // camera - keeps a renderer-less view and stays black for the whole call.
+    val isSubscribed = track.state.collectAsState().value.subscribed
+
     val layoutMode: Long = when (scaleType) {
         ScaleType.Fill -> 1L
         ScaleType.Fit -> 0L
@@ -42,19 +53,22 @@ internal fun InternalVideoView(
         1L
     }
 
-    LaunchedEffect(track) {
-        // First composition: the factory below has (or will have) attached
-        // this same track and recorded it in previousTrack — re-attaching
-        // here would register the renderer twice on the LiveKit track.
-        if (previousTrack === track) return@LaunchedEffect
+    LaunchedEffect(track, isSubscribed) {
+        // Nothing to attach to until the interop factory below has built the
+        // view; it attaches the current track itself, and this effect re-runs
+        // on the next composition anyway.
+        val wrapper = rememberedWrapper ?: return@LaunchedEffect
 
-        previousTrack?.let {
-            rememberedWrapper?.detach(it)
+        if (previousTrack !== track) {
+            previousTrack?.let { wrapper.detach(it) }
+            previousTrack = track
         }
 
-        rememberedWrapper?.attach(track)
-
-        previousTrack = track
+        // Re-binding the track already bound is a no-op on the LiveKit side (the
+        // native VideoView compares it with the one it holds), so attaching on
+        // every re-run is free - and it is what picks up a subscription that
+        // landed after the view was created.
+        wrapper.attach(track)
     }
 
     LaunchedEffect(mirrorMode, layoutMode) {
