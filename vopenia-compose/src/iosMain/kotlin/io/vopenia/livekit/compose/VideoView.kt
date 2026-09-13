@@ -2,6 +2,7 @@ package io.vopenia.livekit.compose
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import io.vopenia.livekit.Room
 import io.vopenia.livekit.participant.track.IVideoTrack
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -14,10 +15,12 @@ actual fun VideoView(
     track: IVideoTrack,
     scaleType: ScaleType,
     isMirror: Boolean,
+    cornerRadius: Dp,
 ) = InternalVideoView(
     modifier,
     room,
     track,
     scaleType,
-    isMirror
+    isMirror,
+    cornerRadius,
 )

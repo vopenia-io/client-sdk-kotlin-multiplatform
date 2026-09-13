@@ -3,6 +3,7 @@ package io.vopenia.livekit.compose
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import io.vopenia.livekit.Room
 import io.vopenia.livekit.participant.track.IVideoTrack
 
@@ -13,6 +14,8 @@ actual fun VideoView(
     track: IVideoTrack,
     scaleType: ScaleType,
     isMirror: Boolean,
+    // Desktop has no renderer yet, so nothing to round.
+    @Suppress("UNUSED_PARAMETER") cornerRadius: Dp,
 ) {
     Column(modifier = modifier) {
         // nothing for now

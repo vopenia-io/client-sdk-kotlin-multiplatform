@@ -10,6 +10,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.viewinterop.UIKitInteropProperties
 import androidx.compose.ui.viewinterop.UIKitView
 import io.vopenia.livekit.Room
@@ -17,6 +18,7 @@ import io.vopenia.livekit.VideoViewFactory
 import io.vopenia.livekit.VideoViewWrapper
 import io.vopenia.livekit.participant.track.IVideoTrack
 import io.vopenia.livekit.participant.track.local.LocalVideoTrackPreview
+import androidx.compose.ui.unit.dp
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.UIKit.UIColor
 
@@ -28,6 +30,7 @@ internal fun InternalVideoView(
     track: IVideoTrack,
     scaleType: ScaleType,
     isMirror: Boolean,
+    cornerRadius: Dp = 0.dp,
 ) {
     var previousTrack: IVideoTrack? by remember { mutableStateOf(null) }
     var rememberedWrapper: VideoViewWrapper? by remember { mutableStateOf(null) }
@@ -84,6 +87,12 @@ internal fun InternalVideoView(
     // background (white). Fill covers the whole view and keeps it transparent.
     val letterboxColor = if (scaleType == ScaleType.Fit) UIColor.blackColor else UIColor.clearColor
 
+    // A Compose `clip` cannot round this view: it is a native view punched through the
+    // Compose canvas, so it keeps square corners inside a rounded tile (visible on the
+    // floating self-view, whose video overflowed the tile's rounded top). Round the
+    // layer itself instead. dp and points are the same unit here.
+    val radiusPoints = cornerRadius.value.toDouble()
+
     UIKitView(
         factory = {
             val wrapper = VideoViewFactory.createVideoView()
@@ -93,6 +102,8 @@ internal fun InternalVideoView(
             wrapper.attach(track)
             previousTrack = track
             wrapper.videoView.backgroundColor = letterboxColor
+            wrapper.videoView.clipsToBounds = true
+            wrapper.videoView.layer.cornerRadius = radiusPoints
             wrapper.videoView
         },
         modifier = modifier,
@@ -100,6 +111,8 @@ internal fun InternalVideoView(
             it.setMirrorMode(mirrorMode)
             it.setLayoutMode(layoutMode)
             it.backgroundColor = letterboxColor
+            it.clipsToBounds = true
+            it.layer.cornerRadius = radiusPoints
         },
         onRelease = {
             // Detach the CURRENTLY attached track, not the one captured when
