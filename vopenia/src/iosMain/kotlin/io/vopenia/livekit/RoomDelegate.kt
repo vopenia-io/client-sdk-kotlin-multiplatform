@@ -23,6 +23,9 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
+/** Whether rooms subscribe adaptively; read by InternalRoom.setMaxReceivingQuality. */
+internal const val ADAPTIVE_STREAM = true
+
 @OptIn(ExperimentalForeignApi::class)
 class RoomDelegate(
     private val scope: CoroutineScope,
@@ -48,8 +51,14 @@ class RoomDelegate(
         defaultVideoPublishOptions = defaultRoomOptions.defaultVideoPublishOptions(),
         defaultAudioPublishOptions = defaultRoomOptions.defaultAudioPublishOptions(),
         defaultDataPublishOptions = defaultRoomOptions.defaultDataPublishOptions(),
-        adaptiveStream = false,
-        dynacast = false,
+        // Adaptive stream: the server pauses every track whose VideoView is off screen and
+        // picks the layer from that view's size, so a 40-participant room costs a handful of
+        // streams instead of forty. The in-call Picture-in-Picture renderer declares itself
+        // adaptive-stream enabled too, so its tiles keep flowing while the app is in the
+        // background. Dynacast: stop encoding the layers nobody subscribes to. Both are what
+        // Meet Web runs.
+        adaptiveStream = ADAPTIVE_STREAM,
+        dynacast = true,
         stopLocalTrackOnUnpublish = true,
         suspendLocalVideoTracksInBackground = false,
         e2eeOptions = null,

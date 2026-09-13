@@ -9,6 +9,7 @@ import io.vopenia.livekit.participant.video.VideoSubscribeQuality
 import io.vopenia.sdk.utils.Log
 import io.livekit.android.LiveKit
 import io.livekit.android.LiveKitOverrides
+import io.livekit.android.RoomOptions
 import io.livekit.android.AudioOptions
 import io.livekit.android.audio.AudioSwitchHandler
 import io.vopenia.livekit.audio.BbbaNoiseReduction
@@ -44,6 +45,14 @@ internal actual class InternalRoom actual constructor(
 
     private val room = LiveKit.create(
         Sdk.applicationContext,
+        // Adaptive stream: the server pauses every track whose renderer is off screen and
+        // picks the layer from the renderer's on-screen size, so a 40-participant room
+        // costs a handful of streams instead of forty. LiveKit tracks that visibility by
+        // itself because the renderer we attach is a View (RemoteVideoTrack.addRenderer
+        // wraps it in a ViewVisibility when the room is adaptive).
+        // Dynacast: stop encoding the layers nobody subscribes to, which is the same saving
+        // on the sending side. Both are what Meet Web runs.
+        options = RoomOptions(adaptiveStream = true, dynacast = true),
         overrides = LiveKitOverrides(
             audioOptions = AudioOptions(
                 audioProcessorOptions = BbbaNoiseReduction.audioProcessorOptions(),
@@ -136,10 +145,15 @@ internal actual class InternalRoom actual constructor(
                 is RoomEvent.ParticipantDisconnected -> onParticipantDisconnected(it.participant)
                 is RoomEvent.RecordingStatusChanged -> isRecordingState.emit(room.isRecording)
                 is RoomEvent.TrackPublished -> {
-                    // Re-apply the receiving-quality cap to any new camera track
-                    // that arrives mid-call so it adopts the user's setting.
+                    // Re-apply the receiving-quality cap to any new camera track that
+                    // arrives mid-call so it adopts the user's setting. Skipped under
+                    // adaptive stream, which owns the layer choice (see
+                    // setMaxReceivingQuality).
                     val pub = it.publication
-                    if (pub is RemoteTrackPublication && pub.source == Track.Source.CAMERA) {
+                    if (!room.adaptiveStream &&
+                        pub is RemoteTrackPublication &&
+                        pub.source == Track.Source.CAMERA
+                    ) {
                         pub.setVideoQuality(receivingQuality.toLkVideoQuality())
                     }
                 }
@@ -179,7 +193,13 @@ internal actual class InternalRoom actual constructor(
     @Volatile
     private var receivingQuality: VideoSubscribeQuality = VideoSubscribeQuality.High
 
+    /**
+     * Ignored while the room is adaptive: LiveKit then derives each subscription's layer
+     * from the renderer's on-screen size, and a manual quality would be undone by the next
+     * visibility update anyway (the iOS SDK refuses the call outright).
+     */
     actual fun setMaxReceivingQuality(quality: VideoSubscribeQuality) {
+        if (room.adaptiveStream) return
         receivingQuality = quality
         val target = quality.toLkVideoQuality()
         room.remoteParticipants.values.forEach { participant ->

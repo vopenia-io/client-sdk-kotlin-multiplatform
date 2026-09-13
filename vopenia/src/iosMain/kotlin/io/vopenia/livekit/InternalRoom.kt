@@ -65,7 +65,12 @@ internal actual class InternalRoom actual constructor(
     actual val remoteParticipants: StateFlow<List<RemoteParticipant>> =
         roomDelegate.remoteParticipants
 
+    /**
+     * Ignored while the room is adaptive: LiveKit then derives each subscription's layer
+     * from its VideoView's size, and `set(videoQuality:)` throws outright in that mode.
+     */
     actual fun setMaxReceivingQuality(quality: VideoSubscribeQuality) {
+        if (ADAPTIVE_STREAM) return
         // Maps VideoSubscribeQuality ordinal (Low=0, Standard=1, High=2) to
         // LiveKit's VideoQuality enum on the Swift side. The Swift helper
         // iterates current camera publications; new publications get the cap
