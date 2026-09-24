@@ -6,6 +6,7 @@ import LiveKitClient.Room
 import LiveKitClient.RoomDelegateProtocol
 import LiveKitClient.RoomOptions
 import LiveKitClientKotlin.DelegateKotlin
+import LiveKitClientKotlin.VideoPublishOptionsKotlin
 import io.vopenia.livekit.events.ConnectionState
 import io.vopenia.livekit.participant.InternalLocalParticipant
 import io.vopenia.livekit.participant.InternalRemoteParticipant
@@ -48,7 +49,11 @@ class RoomDelegate(
         defaultCameraCaptureOptions = defaultRoomOptions.defaultCameraCaptureOptions(),
         defaultScreenShareCaptureOptions = defaultRoomOptions.defaultScreenShareCaptureOptions(),
         defaultAudioCaptureOptions = defaultRoomOptions.defaultAudioCaptureOptions(),
-        defaultVideoPublishOptions = defaultRoomOptions.defaultVideoPublishOptions(),
+        // Same defaults, except the screen share low layer keeps the full frame rate
+        // (LiveKit 2.6.0 caps it at 3 fps; see VideoPublishOptionsKotlin).
+        defaultVideoPublishOptions = VideoPublishOptionsKotlin.smoothScreenShare(
+            defaultRoomOptions.defaultVideoPublishOptions()
+        ),
         defaultAudioPublishOptions = defaultRoomOptions.defaultAudioPublishOptions(),
         defaultDataPublishOptions = defaultRoomOptions.defaultDataPublishOptions(),
         // Adaptive stream: the server pauses every track whose VideoView is off screen and
