@@ -73,3 +73,44 @@ kotlin {
 android {
     namespace = "${rootProject.ext["namespace"]}.compose"
 }
+
+tasks.withType<org.jetbrains.kotlin.gradle.targets.native.tasks.PodInstallSyntheticTask>()
+    .configureEach {
+        doLast {
+            val xcodeprojFiles = listOf(
+                "Pods/Pods.xcodeproj",
+                "synthetic.xcodeproj",
+            )
+
+            for (xcodeprojFile in xcodeprojFiles) {
+                val file =
+                    project.buildDir.resolve("cocoapods/synthetic/ios/$xcodeprojFile/project.pbxproj")
+                setIosDeploymentTarget(file)
+            }
+        }
+    }
+
+// Every pod of the synthetic project builds for 16.0, the apps' minimum. Pods otherwise
+// keep their podspec target (12.0, 13.0) and Xcode 27 refuses anything below 15.0.
+fun setIosDeploymentTarget(
+    xcodeprojFile: File,
+    target: String = "16.0",
+) {
+    if (!xcodeprojFile.exists()) {
+        return
+    }
+
+    val lines = xcodeprojFile.readLines()
+    val out = xcodeprojFile.bufferedWriter()
+    out.use {
+        for (line in lines) {
+            out.write(
+                line.replace(
+                    "IPHONEOS_DEPLOYMENT_TARGET = ",
+                    "IPHONEOS_DEPLOYMENT_TARGET = $target; // "
+                )
+            )
+            out.write(("\n"))
+        }
+    }
+}

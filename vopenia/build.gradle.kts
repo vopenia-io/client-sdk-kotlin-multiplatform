@@ -145,9 +145,11 @@ tasks.withType<org.jetbrains.kotlin.gradle.targets.native.tasks.PodInstallSynthe
         }
     }
 
+// Every pod of the synthetic project builds for 16.0, the apps' minimum. Pods otherwise
+// keep their podspec target (12.0, 13.0) and Xcode 27 refuses anything below 15.0.
 fun setIosDeploymentTarget(
     xcodeprojFile: File,
-    target: String = "14.1",
+    target: String = "16.0",
 ) {
     if (!xcodeprojFile.exists()) {
         return
