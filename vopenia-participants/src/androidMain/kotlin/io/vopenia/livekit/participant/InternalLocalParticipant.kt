@@ -245,7 +245,8 @@ class InternalLocalParticipant(
 
     // Tier (a) noise suppression — surface livered, WebRTC built-in flag.
     // Tier (b) RNNoise/Krisp processor attach is a follow-up.
-    override val noiseReductionSupported: Boolean = true
+    override val noiseReductionSupported: Boolean
+        get() = io.vopenia.livekit.audio.BbbaNoiseReduction.installed
 
     override suspend fun setNoiseReduction(enabled: Boolean) {
         // INFO via android.util.Log (the SDK's expect-Log only has .d) — visible

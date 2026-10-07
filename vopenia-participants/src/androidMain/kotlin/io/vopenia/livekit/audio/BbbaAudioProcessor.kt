@@ -88,7 +88,9 @@ internal class BbbaAudioProcessor : AudioProcessorInterface {
 
     override fun initializeAudioProcessing(sampleRateHz: Int, numChannels: Int) {
         synchronized(lock) {
-            ensureLibraryLoaded()
+            // A build without libbbba.so degrades to a pass-through instead of
+            // an UnsatisfiedLinkError on the WebRTC audio thread.
+            if (!ensureLibraryLoaded()) return
             lastSampleRate = sampleRateHz
             if (sampleRateHz != REQUIRED_SAMPLE_RATE) {
                 Log.w(
@@ -178,11 +180,16 @@ internal class BbbaAudioProcessor : AudioProcessorInterface {
 
         @Volatile private var libraryLoaded = false
 
-        private fun ensureLibraryLoaded() {
+        private fun ensureLibraryLoaded(): Boolean {
             if (!libraryLoaded) {
-                System.loadLibrary("bbba")
-                libraryLoaded = true
+                try {
+                    System.loadLibrary("bbba")
+                    libraryLoaded = true
+                } catch (e: UnsatisfiedLinkError) {
+                    Log.e(TAG, "BBBA unavailable: libbbba.so not in this build", e)
+                }
             }
+            return libraryLoaded
         }
     }
 }

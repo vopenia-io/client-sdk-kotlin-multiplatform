@@ -20,9 +20,17 @@ import io.livekit.android.audio.AudioProcessorOptions
 object BbbaNoiseReduction {
     private val processor = BbbaAudioProcessor()
 
+    /**
+     * Whether rooms get the processor at all. Read at Room creation, so set it
+     * before the first room exists. False keeps BBBA out of the audio pipeline
+     * and never loads `libbbba.so`: apps that strip the library from their
+     * APK must set it.
+     */
+    @Volatile var installed: Boolean = true
+
     /** Register at Room creation: `AudioOptions(audioProcessorOptions = audioProcessorOptions())`. */
-    fun audioProcessorOptions(): AudioProcessorOptions =
-        AudioProcessorOptions(capturePostProcessor = processor)
+    fun audioProcessorOptions(): AudioProcessorOptions? =
+        if (installed) AudioProcessorOptions(capturePostProcessor = processor) else null
 
     /** Toggle noise suppression live; pure pass-through while disabled. */
     fun setEnabled(enabled: Boolean) = processor.setEnabled(enabled)
