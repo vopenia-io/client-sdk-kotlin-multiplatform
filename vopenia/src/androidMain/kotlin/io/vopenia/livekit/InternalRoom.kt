@@ -125,6 +125,8 @@ internal actual class InternalRoom actual constructor(
                 // is RoomEvent.ActiveSpeakersChanged -> TODO()
                 is RoomEvent.Connected -> {
                     (localParticipant as? InternalLocalParticipant)?.refreshAttributesFromNative()
+                    // A recording already running when we join raises no RecordingStatusChanged.
+                    isRecordingState.emit(room.isRecording)
                     connectionStateEmitter.emit(ConnectionState.Connected)
                 }
                 // is RoomEvent.ConnectionQualityChanged -> TODO()
@@ -162,6 +164,7 @@ internal actual class InternalRoom actual constructor(
                 // is RoomEvent.ParticipantPermissionsChanged -> TODO()
                 is RoomEvent.Reconnected -> {
                     (localParticipant as? InternalLocalParticipant)?.refreshAttributesFromNative()
+                    isRecordingState.emit(room.isRecording)
                     connectionStateEmitter.emit(ConnectionState.Connected)
                 }
                 is RoomEvent.Reconnecting -> connectionStateEmitter.emit(ConnectionState.Connecting)
