@@ -23,6 +23,9 @@ internal expect class InternalRoom(
      */
     val isRecording: StateFlow<Boolean>
 
+    /** The room metadata set by the server (Meet keeps the recording mode and status there). */
+    val metadata: StateFlow<String?>
+
     suspend fun connect(url: String, token: String, enableMicrophone: Boolean = true)
 
     fun disconnect()

@@ -36,6 +36,12 @@ class Room {
      */
     val isRecording: StateFlow<Boolean> get() = internalRoom.isRecording
 
+    /**
+     * The LiveKit room metadata, as set by the server; null until the room is joined.
+     * Meet stores the recording mode and status there (`recording_mode`, `recording_status`).
+     */
+    val metadata: StateFlow<String?> get() = internalRoom.metadata
+
     init {
         Log.d("Room", "creating room for sdk v0.0.9-alpha4")
     }

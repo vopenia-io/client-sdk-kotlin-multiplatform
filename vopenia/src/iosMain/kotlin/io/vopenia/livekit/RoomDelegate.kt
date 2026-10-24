@@ -31,7 +31,8 @@ internal const val ADAPTIVE_STREAM = true
 class RoomDelegate(
     private val scope: CoroutineScope,
     private val emit: (ConnectionState) -> Unit,
-    private val onIsRecordingUpdated: (Boolean) -> Unit
+    private val onIsRecordingUpdated: (Boolean) -> Unit,
+    private val onMetadataUpdated: (String?) -> Unit
 ) {
     private val delegateWrapper = DelegateKotlin()
     private val connectOptions = ConnectOptions()
@@ -152,7 +153,8 @@ class RoomDelegate(
                 onParticipantAttributesUpdated = { participant, attributes ->
                     onAttributesUpdated(participant, attributes)
                 },
-                onIsRecordingUpdated = onIsRecordingUpdated
+                onIsRecordingUpdated = onIsRecordingUpdated,
+                onMetadataUpdated = onMetadataUpdated
             )
         ),
     )

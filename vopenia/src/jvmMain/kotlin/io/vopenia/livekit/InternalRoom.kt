@@ -33,6 +33,8 @@ internal actual class InternalRoom actual constructor(
     private val isRecordingState = MutableStateFlow(false)
     actual val isRecording: StateFlow<Boolean> = isRecordingState.asStateFlow()
 
+    actual val metadata: StateFlow<String?> = MutableStateFlow<String?>(null).asStateFlow()
+
     actual fun setMaxReceivingQuality(quality: VideoSubscribeQuality) {
         // not available on JVM
     }

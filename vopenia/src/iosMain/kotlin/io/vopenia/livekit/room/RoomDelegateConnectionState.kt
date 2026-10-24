@@ -19,7 +19,8 @@ class RoomDelegateConnectionState(
     private val onParticipantConnected: (RemoteParticipant) -> Unit,
     private val onParticipantDisconnected: (RemoteParticipant) -> Unit,
     private val onParticipantAttributesUpdated: (Participant, Map<String, String>) -> Unit,
-    private val onIsRecordingUpdated: (Boolean) -> Unit
+    private val onIsRecordingUpdated: (Boolean) -> Unit,
+    private val onMetadataUpdated: (String?) -> Unit
 ) : RoomDelegateProtocol, NSObject() {
     override fun roomDidConnect(room: Room) {
         Log.d("RoomDelegateConnectionState", "roomDidConnect")
@@ -94,5 +95,12 @@ class RoomDelegateConnectionState(
     @ObjCSignatureOverride
     override fun room(room: Room, didUpdateIsRecording: Boolean) {
         onIsRecordingUpdated(didUpdateIsRecording)
+    }
+
+    // Also called once on join when the room already has metadata.
+    @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
+    @ObjCSignatureOverride
+    override fun room(room: Room, didUpdateMetadata: String?) {
+        onMetadataUpdated(didUpdateMetadata)
     }
 }

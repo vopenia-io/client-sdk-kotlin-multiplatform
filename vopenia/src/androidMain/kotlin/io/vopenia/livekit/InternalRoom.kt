@@ -87,6 +87,9 @@ internal actual class InternalRoom actual constructor(
     private val isRecordingState = MutableStateFlow(false)
     actual val isRecording: StateFlow<Boolean> = isRecordingState.asStateFlow()
 
+    private val metadataState = MutableStateFlow<String?>(null)
+    actual val metadata: StateFlow<String?> = metadataState.asStateFlow()
+
     actual suspend fun connect(url: String, token: String, enableMicrophone: Boolean) {
         // Start the room-event collector ONCE (see [collecting]); relaunching it on
         // every rejoin would multiply the handlers.
@@ -125,8 +128,10 @@ internal actual class InternalRoom actual constructor(
                 // is RoomEvent.ActiveSpeakersChanged -> TODO()
                 is RoomEvent.Connected -> {
                     (localParticipant as? InternalLocalParticipant)?.refreshAttributesFromNative()
-                    // A recording already running when we join raises no RecordingStatusChanged.
+                    // A recording already running when we join raises no RecordingStatusChanged,
+                    // and the metadata the room already had raises no RoomMetadataChanged.
                     isRecordingState.emit(room.isRecording)
+                    metadataState.value = room.metadata
                     connectionStateEmitter.emit(ConnectionState.Connected)
                 }
                 // is RoomEvent.ConnectionQualityChanged -> TODO()
@@ -146,6 +151,7 @@ internal actual class InternalRoom actual constructor(
                 is RoomEvent.ParticipantConnected -> onParticipantConnected(it.participant)
                 is RoomEvent.ParticipantDisconnected -> onParticipantDisconnected(it.participant)
                 is RoomEvent.RecordingStatusChanged -> isRecordingState.emit(room.isRecording)
+                is RoomEvent.RoomMetadataChanged -> metadataState.value = it.newMetadata
                 is RoomEvent.TrackPublished -> {
                     // Re-apply the receiving-quality cap to any new camera track that
                     // arrives mid-call so it adopts the user's setting. Skipped under
@@ -165,11 +171,11 @@ internal actual class InternalRoom actual constructor(
                 is RoomEvent.Reconnected -> {
                     (localParticipant as? InternalLocalParticipant)?.refreshAttributesFromNative()
                     isRecordingState.emit(room.isRecording)
+                    metadataState.value = room.metadata
                     connectionStateEmitter.emit(ConnectionState.Connected)
                 }
                 is RoomEvent.Reconnecting -> connectionStateEmitter.emit(ConnectionState.Connecting)
                 // is RoomEvent.RecordingStatusChanged -> TODO()
-                // is RoomEvent.RoomMetadataChanged -> TODO()
                 // is RoomEvent.TrackE2EEStateEvent -> TODO()
                 // is RoomEvent.TrackMuted -> TODO()
                 // is RoomEvent.TrackPublished -> TODO()

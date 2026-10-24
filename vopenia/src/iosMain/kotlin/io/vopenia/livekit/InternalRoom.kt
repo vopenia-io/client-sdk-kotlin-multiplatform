@@ -21,6 +21,9 @@ internal actual class InternalRoom actual constructor(
     private val isRecordingState = MutableStateFlow(false)
     actual val isRecording: StateFlow<Boolean> = isRecordingState
 
+    private val metadataState = MutableStateFlow<String?>(null)
+    actual val metadata: StateFlow<String?> = metadataState
+
     private val roomDelegate = RoomDelegate(
         scope,
         emit = { state ->
@@ -31,7 +34,8 @@ internal actual class InternalRoom actual constructor(
         },
         onIsRecordingUpdated = { value ->
             scope.launch { isRecordingState.emit(value) }
-        }
+        },
+        onMetadataUpdated = { value -> metadataState.value = value }
     )
 
     actual suspend fun connect(
